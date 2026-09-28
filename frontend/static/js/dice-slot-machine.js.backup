@@ -1,0 +1,171 @@
+/**
+ * dice.js — D20 Roller Animation
+ * Estilo slot machine com números girando
+ */
+
+function playDiceSound(type) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (type === 'crit') {
+      [261, 329, 392, 523].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.06);
+        gain.gain.linearRampToValueAtTime(0.12, ctx.currentTime + i * 0.06 + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.06 + 0.5);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + i * 0.06);
+        osc.stop(ctx.currentTime + i * 0.06 + 0.5);
+      });
+    }
+  } catch {}
+}
+
+const OUTCOME_CONFIG = {
+  sucesso_critico: { color: '#ffd700', glow: '#ffd700', label: '⭐ Sucesso Crítico!', soundType: 'crit', textColor: '#ffd700' },
+  sucesso: { color: '#4caf82', glow: '#4caf82', label: '✅ Sucesso!', soundType: 'land', textColor: '#4caf82' },
+  sucesso_parcial: { color: '#80c090', glow: null, label: '🟡 Sucesso Parcial', soundType: 'land', textColor: '#80c090' },
+  falha_parcial: { color: '#c8a84b', glow: null, label: '🟠 Falha Parcial', soundType: 'land', textColor: '#f0b030' },
+  falha: { color: '#8080a0', glow: null, label: '❌ Falha', soundType: 'land', textColor: '#9090a8' },
+  falha_critica: { color: '#e05555', glow: '#e05555', label: '💀 Falha Crítica!', soundType: 'fail', textColor: '#e05555' },
+};
+
+let diceOverlay = null;
+
+function showDiceRoll(rollResult, onComplete) {
+  if (diceOverlay) diceOverlay.remove();
+
+  const { natural, modifier, final, outcome } = rollResult;
+  const cfg = OUTCOME_CONFIG[outcome] || OUTCOME_CONFIG['falha'];
+
+  diceOverlay = document.createElement('div');
+  diceOverlay.id = 'dice-overlay';
+  diceOverlay.innerHTML = `
+    <div class="dice-backdrop"></div>
+    <div class="dice-stage">
+      <div class="dice-wrapper" id="dice-wrapper">
+        <div class="dice-number-display" id="dice-number" style="
+          font-size: 120px;
+          font-weight: 900;
+          font-family: Georgia, serif;
+          color: #c8a84b;
+          text-shadow: 0 4px 12px rgba(0,0,0,0.9);
+        ">1</div>
+        <div style="font-size:14px; color:#666; margin-top:8px; text-transform:uppercase; letter-spacing:2px;">D20</div>
+      </div>
+      <div class="dice-result-panel" id="dice-result-panel" style="opacity:0">
+        <div class="dice-formula" id="dice-formula"></div>
+        <div class="dice-outcome-label" id="dice-outcome-label"></div>
+      </div>
+      <div class="dice-skip-hint">Clique para pular</div>
+    </div>
+  `;
+  document.body.appendChild(diceOverlay);
+
+  const wrapper = document.getElementById('dice-wrapper');
+  const numberEl = document.getElementById('dice-number');
+  const resultPanel = document.getElementById('dice-result-panel');
+  const formula = document.getElementById('dice-formula');
+  const outcomeEl = document.getElementById('dice-outcome-label');
+
+  let completed = false;
+  diceOverlay.addEventListener('click', () => {
+    if (!completed) finishAnimation();
+  });
+
+  let currentNum = 1;
+  const startTime = Date.now();
+  const duration = 1800;
+
+  wrapper.style.transform = 'scale(0)';
+  wrapper.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+  requestAnimationFrame(() => {
+    wrapper.style.transform = 'scale(1)';
+  });
+
+  function spin() {
+    const elapsed = Date.now() - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+
+    const frameSkip = Math.floor(eased * 15 + 1);
+    
+    if (elapsed % (frameSkip * 16) < 16) {
+      if (progress < 0.75) {
+        currentNum = Math.floor(Math.random() * 20) + 1;
+      } else {
+        currentNum = natural;
+      }
+      numberEl.textContent = currentNum;
+    }
+
+    const blurAmount = (1 - eased) * 10;
+    const scale = 1 + (1 - eased) * 0.4;
+    numberEl.style.filter = blurAmount > 0.5 ? `blur(${blurAmount}px)` : 'none';
+    numberEl.style.transform = `scale(${scale})`;
+
+    if (progress < 1) {
+      requestAnimationFrame(spin);
+    } else {
+      finishAnimation();
+    }
+  }
+
+  setTimeout(() => requestAnimationFrame(spin), 300);
+
+  function finishAnimation() {
+    if (completed) return;
+    completed = true;
+
+    numberEl.textContent = natural;
+    numberEl.style.color = cfg.color;
+    numberEl.style.filter = 'none';
+    numberEl.style.transform = 'scale(1.2)';
+    numberEl.style.transition = 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.3s ease';
+
+    setTimeout(() => {
+      numberEl.style.transform = 'scale(1)';
+    }, 100);
+
+    if (cfg.glow) {
+      numberEl.style.textShadow = `0 0 20px ${cfg.glow}, 0 0 40px ${cfg.glow}, 0 4px 12px rgba(0,0,0,0.9)`;
+    }
+
+    if (cfg.soundType === 'crit') {
+      playDiceSound('crit');
+    }
+
+    const sign = modifier >= 0 ? `+${modifier}` : `${modifier}`;
+    formula.innerHTML = `
+      <span class="dice-nat">d20 = ${natural}</span>
+      ${modifier !== 0 ? `<span class="dice-sep"> ${sign} </span><span class="dice-total">= ${final}</span>` : ''}
+    `;
+    outcomeEl.textContent = cfg.label;
+    outcomeEl.style.color = cfg.textColor;
+    resultPanel.style.transition = 'opacity 0.4s ease';
+    resultPanel.style.opacity = '1';
+
+    setTimeout(() => {
+      closeDiceOverlay();
+      if (onComplete) onComplete();
+    }, 2500);
+  }
+}
+
+function closeDiceOverlay() {
+  if (!diceOverlay) return;
+  diceOverlay.style.transition = 'opacity 0.3s ease';
+  diceOverlay.style.opacity = '0';
+  setTimeout(() => {
+    if (diceOverlay) {
+      diceOverlay.remove();
+      diceOverlay = null;
+    }
+  }, 300);
+}
+
+window.showDiceRoll = showDiceRoll;
+window.closeDiceOverlay = closeDiceOverlay;

@@ -1,0 +1,42 @@
+# Ambiente virtual Python
+venv/
+.venv/
+env/
+
+# Cache Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Sessões salvas (dados do jogo, não vão pro repo)
+data/sessions/
+
+# Imagens geradas pelo Stable Diffusion (pesadas, ficam no Proton Drive)
+frontend/static/images/characters/*.png
+frontend/static/images/characters/*.jpg
+
+# Arquivos de conflito do Kiro
+backend/main\ \(*\).py
+*.backup-broken
+
+# Logs
+*.log
+logs/
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Variáveis de ambiente
+.env
+.env.local
+secrets.py
