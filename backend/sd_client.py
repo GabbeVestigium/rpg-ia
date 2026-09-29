@@ -2,43 +2,87 @@
 """
 SD Client — Integração com Stable Diffusion (Automatic1111 WebUI)
 Otimizado para GTX 1660 (4GB VRAM) com suporte a conteúdo adulto.
+Modelo: AbyssOrangeMix3 (AOM3) — estilo anime semi-realista.
 """
 
 import os
 import base64
 import requests
-import json
 from typing import Optional, Dict, Tuple
-from pathlib import Path
 
 # ─── CONFIGURAÇÕES ────────────────────────────────────────────────────────────
 
 SD_API_URL = "http://127.0.0.1:7860"  # Automatic1111 default port
-SD_TIMEOUT = 180  # 3 minutos timeout (geração pode demorar)
+SD_TIMEOUT = 180  # 3 minutos timeout
 
-# Configurações otimizadas para GTX 1660 (4GB VRAM)
+# Configurações otimizadas para GTX 1660 (4GB VRAM) + AOM3
+# AOM3 performa melhor com cfg_scale entre 5-7 e DPM++ 2M Karras
 DEFAULT_SETTINGS = {
-    "width": 512,               # Portrait ideal para personagens
-    "height": 768,              
-    "steps": 25,                # Balanço qualidade/velocidade
-    "cfg_scale": 7,             # Guidance scale
-    "sampler_name": "DPM++ 2M Karras",  # Rápido + qualidade
-    "batch_size": 1,            # Uma imagem por vez (VRAM limitada)
-    "restore_faces": False,     # Consome VRAM extra
-    "enable_hr": False,         # Hires fix desligado (VRAM++)
+    "width": 512,
+    "height": 768,              # Portrait ratio
+    "steps": 28,                # AOM3 precisa de mais steps que SD realista
+    "cfg_scale": 6,             # AOM3 fica melhor com cfg baixo (5-7)
+    "sampler_name": "DPM++ 2M Karras",
+    "batch_size": 1,
+    "restore_faces": False,     # Não funciona bem com anime
+    "enable_hr": False,         # Desligado para economizar VRAM
     "denoising_strength": 0.7,
 }
 
-# Negative prompt padrão (evita defeitos comuns)
-DEFAULT_NEGATIVE = """
-blurry, low quality, deformed, ugly, bad anatomy, bad hands, 
-extra fingers, missing fingers, fused fingers, too many fingers,
-long neck, duplicate, mutilated, poorly drawn hands, poorly drawn face,
-mutation, deformed, bad proportions, gross proportions, 
-malformed limbs, missing arms, missing legs, extra arms, extra legs,
-watermark, signature, username, text, caption, jpeg artifacts,
-worst quality, normal quality, lowres
-"""
+# Negative prompt otimizado para AOM3 (anime)
+# AOM3 precisa de negative prompts específicos para evitar defeitos comuns
+DEFAULT_NEGATIVE = (
+    "lowres, bad anatomy, bad hands, text, error, missing fingers, "
+    "extra digit, fewer digits, cropped, worst quality, low quality, "
+    "normal quality, jpeg artifacts, signature, watermark, username, "
+    "blurry, bad feet, poorly drawn hands, poorly drawn face, "
+    "mutation, deformed, extra limbs, extra arms, extra legs, "
+    "malformed limbs, fused fingers, too many fingers, long neck, "
+    "cross-eyed, mutilated, gross proportions, missing arms, "
+    "missing legs, extra arms, extra legs, disfigured, ugly"
+)
+
+# ─── MAPEAMENTOS DE RAÇA E CLASSE ─────────────────────────────────────────────
+
+# Termos em inglês que funcionam bem no AOM3
+RACE_TRAITS = {
+    "human":      "human",
+    "humano":     "human",
+    "elf":        "elf girl, long pointy ears, elegant",
+    "elfo":       "elf girl, long pointy ears, elegant",
+    "elfa":       "elf girl, long pointy ears, elegant",
+    "dwarf":      "dwarf, short stature, stocky",
+    "anão":       "dwarf, short stature, stocky",
+    "orc":        "orc, green skin, tusks, muscular",
+    "halfling":   "halfling, small stature, cute",
+    "tiefling":   "tiefling, demon horns, tail, purple skin",
+    "dragonborn": "dragonborn, scales, draconic features, reptilian eyes",
+    "dark elf":   "dark elf, dark skin, white hair, red eyes",
+    "elfa negra": "dark elf, dark skin, white hair, red eyes",
+}
+
+CLASS_VISUAL = {
+    "warrior":     "heavy armor, sword, shield, battle-scarred",
+    "guerreiro":   "heavy armor, sword, shield, battle-scarred",
+    "mage":        "elegant robes, magic staff, glowing runes, magical aura",
+    "mago":        "elegant robes, magic staff, glowing runes, magical aura",
+    "maga":        "elegant robes, magic staff, glowing runes, magical aura",
+    "rogue":       "dark leather armor, daggers, hood, mysterious",
+    "ladino":      "dark leather armor, daggers, hood, mysterious",
+    "cleric":      "holy robes, divine symbols, gentle glow, healer",
+    "clérigo":     "holy robes, divine symbols, gentle glow, healer",
+    "ranger":      "ranger cloak, bow, quiver, nature-themed outfit",
+    "patrulheiro": "ranger cloak, bow, quiver, nature-themed outfit",
+    "paladin":     "shining plate armor, holy sword, radiant aura",
+    "paladino":    "shining plate armor, holy sword, radiant aura",
+    "paladina":    "shining plate armor, holy sword, radiant aura",
+    "bard":        "colorful outfit, lute, charismatic, performer",
+    "bardo":       "colorful outfit, lute, charismatic, performer",
+    "witch":       "witch hat, dark robes, spell book, eerie glow",
+    "bruxa":       "witch hat, dark robes, spell book, eerie glow",
+    "assassin":    "black stealth suit, mask, twin blades, shadows",
+    "assassino":   "black stealth suit, mask, twin blades, shadows",
+}
 
 # ─── FUNÇÕES AUXILIARES ───────────────────────────────────────────────────────
 
@@ -49,99 +93,56 @@ def build_character_prompt(
     gender: str = "female",
     description: Optional[str] = None,
     nsfw: bool = False,
-    style: str = "semi-realistic"
+    style: str = "anime"
 ) -> Tuple[str, str]:
     """
-    Constrói prompt otimizado para geração de retrato de personagem.
-    
-    Args:
-        name: Nome do personagem
-        race: Raça (human, elf, dwarf, orc, etc)
-        char_class: Classe (warrior, mage, rogue, etc)
-        gender: Gênero (male, female, non-binary)
-        description: Descrição adicional livre
-        nsfw: Se True, permite conteúdo adulto
-        style: Estilo artístico (semi-realistic, anime, painted, etc)
-    
-    Returns:
-        (prompt, negative_prompt)
+    Constrói prompt otimizado para AOM3 (anime semi-realista).
+
+    O AOM3 usa uma estrutura de prompt diferente do SD realista:
+    - Começa com qualidade (masterpiece, best quality)
+    - Tags curtas e diretas funcionam melhor que frases longas
+    - NSFW requer tags específicas do modelo
     """
-    
-    # Mapeamento de raça para características
-    race_traits = {
-        "human": "human",
-        "humano": "human",
-        "elf": "elf, pointed ears, elegant features",
-        "elfo": "elf, pointed ears, elegant features",
-        "dwarf": "dwarf, short stature, thick beard, stocky build",
-        "anão": "dwarf, short stature, thick beard, stocky build",
-        "orc": "orc, green skin, tusks, muscular",
-        "halfling": "halfling, small stature, cheerful",
-        "tiefling": "tiefling, horns, tail, demonic features",
-        "dragonborn": "dragonborn, scales, draconic features",
-    }
-    
-    # Mapeamento de classe para equipamento/visual
-    class_visual = {
-        "warrior": "armored, sword and shield, battle-worn",
-        "guerreiro": "armored, sword and shield, battle-worn",
-        "mage": "robes with arcane symbols, holding staff, magical aura",
-        "mago": "robes with arcane symbols, holding staff, magical aura",
-        "rogue": "leather armor, daggers, hooded cloak, stealthy",
-        "ladino": "leather armor, daggers, hooded cloak, stealthy",
-        "cleric": "holy symbols, light armor, divine glow",
-        "clérigo": "holy symbols, light armor, divine glow",
-        "ranger": "bow and arrows, forest ranger outfit, nature theme",
-        "patrulheiro": "bow and arrows, forest ranger outfit, nature theme",
-        "paladin": "heavy plate armor, holy sword, radiant",
-        "paladino": "heavy plate armor, holy sword, radiant",
-        "bard": "musical instrument, colorful clothes, charming",
-        "bardo": "musical instrument, colorful clothes, charming",
-    }
-    
-    # Estilo artístico
-    style_prompt = {
-        "semi-realistic": "semi-realistic, detailed, high quality, professional digital art",
-        "anime": "anime style, cel shaded, vibrant colors",
-        "painted": "oil painting, painted style, artistic, brushstrokes",
-        "realistic": "photorealistic, realistic, 8k, high detail",
-        "fantasy-art": "fantasy art, trending on artstation, detailed illustration",
-    }
-    
-    # Construir prompt base
-    race_desc = race_traits.get(race.lower(), race)
-    class_desc = class_visual.get(char_class.lower(), char_class)
-    style_desc = style_prompt.get(style, style_prompt["semi-realistic"])
-    
-    prompt_parts = [
-        f"portrait of a {gender} {race_desc} {char_class}",
+
+    race_desc  = RACE_TRAITS.get(race.lower(), race)
+    class_desc = CLASS_VISUAL.get(char_class.lower(), char_class)
+
+    # Gênero em tags anime
+    gender_tag = "1girl" if gender.lower() in ("female", "feminino", "f") else "1boy"
+
+    # Base de qualidade — essencial para AOM3
+    quality_tags = "masterpiece, best quality, ultra-detailed, absurdres"
+
+    # Construir prompt
+    parts = [
+        quality_tags,
+        gender_tag,
+        race_desc,
         class_desc,
-        style_desc,
-        "detailed face, expressive eyes, good anatomy",
-        "studio lighting, rim lighting",
-        "4k, masterpiece, best quality",
+        "portrait, upper body, looking at viewer",
+        "beautiful face, expressive eyes, detailed eyes",
+        "dynamic lighting, dramatic shadows, fantasy setting",
     ]
-    
-    # Adicionar descrição customizada se fornecida
+
+    # Descrição livre do personagem (cabelo, olhos, traços)
     if description:
-        prompt_parts.insert(2, description)
-    
-    # Ajustes para NSFW
+        parts.insert(3, description)
+
+    # NSFW — tags específicas do AOM3
     if nsfw:
-        prompt_parts.extend([
-            "beautiful, attractive, seductive",
-            "detailed body, anatomically correct",
+        parts.extend([
+            "attractive, beautiful body, detailed skin",
+            "seductive expression, alluring",
         ])
+        negative = DEFAULT_NEGATIVE
     else:
-        prompt_parts.append("sfw, clothed, modest")
-    
-    prompt = ", ".join(prompt_parts)
-    
-    # Negative prompt (adiciona restrições se não for NSFW)
-    negative = DEFAULT_NEGATIVE
-    if not nsfw:
-        negative += ", nsfw, nude, nudity, explicit, sexual content, exposed"
-    
+        parts.append("fully clothed, tasteful")
+        negative = DEFAULT_NEGATIVE + (
+            ", nsfw, nude, nudity, explicit, sexual, "
+            "revealing clothes, underwear, lingerie"
+        )
+
+    prompt = ", ".join(parts)
     return prompt, negative
 
 
@@ -277,7 +278,7 @@ def generate_character_portrait(
         gender=gender,
         description=description,
         nsfw=nsfw,
-        style="semi-realistic"  # Melhor balanço qualidade/VRAM
+        style="anime"  # AOM3 — estilo anime semi-realista
     )
     
     # Gerar imagem
