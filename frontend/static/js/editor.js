@@ -10,7 +10,7 @@ let editingId = null;
 let currentFields = [];
 
 const BLANK = {
-  name: '', age: 25, gender: 'female', avatar_emoji: '🧙', world_id: '', tags: '',
+  name: '', age: 25, gender: 'female', avatar_emoji: '🧙', group: false, world_id: '', tags: '',
   description: '', personality: '', scenario: '', first_message: '',
   example_dialogue: '', appearance_tags: '',
 };
@@ -22,6 +22,7 @@ function fields(worlds) {
     { key: 'gender', label: 'Gênero (usado nas imagens)', type: 'select',
       options: [['female', 'Feminino'], ['male', 'Masculino'], ['other', 'Outro']] },
     { key: 'avatar_emoji', label: 'Emoji', type: 'text' },
+    { key: 'group', label: 'Personagem de grupo (o narrador interpreta um elenco)', type: 'checkbox' },
     { key: 'world_id', label: 'Mundo', type: 'select', options: [['', 'Nenhum'], ...worlds.map((w) => [w.id, w.name])] },
     { key: 'tags', label: 'Tags (separadas por vírgula)', type: 'text' },
     { key: 'description', label: 'Aparência e história', type: 'textarea', rows: 5 },

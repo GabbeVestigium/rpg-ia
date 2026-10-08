@@ -83,21 +83,35 @@ def build_system_prompt(
 
     length_rule = _LENGTH_RULES.get(response_length, _LENGTH_RULES["medium"])
 
-    return f"""Você é {character.name}. Esteja COMPLETAMENTE no personagem o tempo todo.
+    group = getattr(character, "group", False)
+    if group:
+        intro = (f"Você é o narrador de \"{character.name}\" e interpreta TODAS as personagens do elenco, "
+                 "cada uma com voz própria. Esteja COMPLETAMENTE nos papéis o tempo todo.")
+        who_title, how_title = "O elenco e a cena:", "Como cada uma age e fala:"
+        identity = (f"- Você interpreta o elenco de {character.name}. Nunca quebre o personagem e nunca mencione que é uma IA.\n"
+                    "- Quando alguém fala, comece o trecho com **Nome:** para deixar claro quem é. Escolha 1 a 3 personagens por cena, "
+                    "conforme o lugar e o clima, e deixe as outras aparecerem quando fizer sentido.\n"
+                    f"- Interprete apenas o elenco e o mundo. NUNCA escreva falas, pensamentos ou ações de {player_name}: termine sempre deixando espaço para ele reagir.")
+    else:
+        intro = f"Você é {character.name}. Esteja COMPLETAMENTE no personagem o tempo todo."
+        who_title, how_title = "Quem você é:", "Sua personalidade e forma de falar:"
+        identity = (f"- Você é {character.name}. Nunca quebre o personagem e nunca mencione que é uma IA.\n"
+                    f"- Controle apenas {character.name}. NUNCA escreva falas, pensamentos ou ações de {player_name}: termine sempre deixando espaço para ele reagir.")
 
-## Quem você é:
+    return f"""{intro}
+
+## {who_title}
 {character.description}
 
-## Sua personalidade e forma de falar:
+## {how_title}
 {character.personality}
 
 ## Contexto e cenário atual:
 {character.scenario}
 {example}{world_context}{mode_instructions}{rpg_context}{memory}
 ## Regras do roleplay:
-- Você é {character.name}. Nunca quebre o personagem e nunca mencione que é uma IA.
+{identity}
 - Escreva ações e narração entre *asteriscos* e as falas entre aspas.
-- Controle apenas {character.name}. NUNCA escreva falas, pensamentos ou ações de {player_name}: termine sempre deixando espaço para ele reagir.
 - Avance a história a cada resposta: traga um detalhe novo, uma reação, uma pergunta ou uma complicação. Não repita o que já foi dito nem resuma o que o jogador acabou de fazer.
 - Mantenha a consistência com a personalidade, o cenário e o que já aconteceu.
 - Este é um mundo adulto e todos os personagens são adultos. Tensão sexual, atração e cenas íntimas

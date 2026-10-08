@@ -144,6 +144,15 @@ GET  /api/tts/status                     POST /api/tts  (Piper, devolve WAV)
 
 | ID | Nome | Mundo | Descrição |
 |----|------|-------|-----------|
+| `harem-eldoria` | As Heroínas de Eldoria | eldoria | Personagem de grupo (`group: true`): isekai com harém, sete heroínas adultas de arquétipos de anime (tsundere, kuudere, genki, onee-san, yandere, dandere, ojou-sama) |
+| `vex` | Vex | neon-city | Netrunner e mercenária, clima Cyberpunk 2077/Edgerunners, romance trágico |
+| `morrigan` | Morrigan | abismo | Entidade do Abismo, dark fantasy e horror psicológico, pacto com Preço |
+
+Personagem de grupo: o narrador interpreta todo o elenco e marca quem fala com **Nome:** (ver `build_system_prompt`).
+Conteúdo sexual explícito não é escrito aqui: as fichas só definem desejo, ritmo e a instrução de narrar a intimidade;
+o texto explícito vem do modelo local.
+
+----|------|-------|-----------|
 | `lyra` | Lyra Ashveil | eldoria | Elfa maga renegada, sarcástica, ex-Ordem dos Sete Selos |
 | `morrigan` | Morrigan | abismo | Entidade do Abismo em forma humana, misteriosa |
 | `vex` | Vex-7 | neon-city | Hacker de elite cyberpunk com implantes |

@@ -31,6 +31,7 @@ class Character(BaseModel):
     first_message: str             # Primeira mensagem que o personagem manda
     example_dialogue: str = ""     # Trechos de fala de exemplo (calibra o estilo)
     appearance_tags: str = ""      # Tags em inglês para o SD ("silver hair, violet eyes")
+    group: bool = False            # True: o narrador interpreta um elenco (ex: harém)
     avatar_emoji: str = "👤"       # Emoji de avatar
     tags: List[str] = []
 

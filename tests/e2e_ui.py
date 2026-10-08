@@ -49,12 +49,12 @@ try:
         page.screenshot(path=f"{SHOTS}/1-select.png")
 
         # Narrativo
-        page.click(".char-card >> nth=0")  # lyra (ordem alfabética)
+        page.click(".char-card:has-text(\"Vex\")")
         page.wait_for_selector("#modal-mode", state="visible")
         page.screenshot(path=f"{SHOTS}/2-mode.png")
         page.click('[data-mode="narrative"]')
         page.wait_for_selector("#screen-chat.active")
-        check("Lyra" in page.inner_text("#topbar-char-name"), "chat abriu com a Lyra")
+        check("Vex" in page.inner_text("#topbar-char-name"), "chat abriu com a Vex")
         check(page.locator(".message.assistant .bubble").count() >= 1, "mensagem de abertura renderizada")
 
         page.fill("#user-input", "Olá Lyra")
@@ -139,7 +139,7 @@ try:
         page.screenshot(path=f"{SHOTS}/6-gallery.png")
 
         # Modo completo
-        page.click(".char-card >> nth=0")
+        page.click(".char-card:has-text(\"Vex\")")
         page.click('[data-mode="full"]')
         page.wait_for_selector("#screen-create.active")
         page.fill("#input-player-name", "Kael")
