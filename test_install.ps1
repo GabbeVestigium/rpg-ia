@@ -1,4 +1,4 @@
-$PythonExe = "C:\Users\gabri\AppData\Local\Programs\Python\Python312\python.exe"
+﻿$PythonExe = "C:\Users\gabri\AppData\Local\Programs\Python\Python312\python.exe"
 $ProjectDir = "C:\Users\gabri\Documents\KIRO-IA\tools\rpg-ia"
 $VenvDir = Join-Path $ProjectDir "venv"
 $VenvPython = Join-Path $VenvDir "Scripts\python.exe"
