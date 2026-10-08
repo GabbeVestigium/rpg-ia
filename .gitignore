@@ -40,3 +40,8 @@ desktop.ini
 .env
 .env.local
 secrets.py
+
+# Dados gerados jogando
+data/scenes/
+data/settings.json
+.pytest_cache/

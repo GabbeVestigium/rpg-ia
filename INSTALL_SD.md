@@ -2,7 +2,7 @@
 
 ## Sobre
 
-Este guia ensina como instalar e configurar o **Stable Diffusion (Automatic1111 WebUI)** otimizado para sua **NVIDIA GeForce GTX 1660 (4GB VRAM)**.
+Este guia ensina como instalar e configurar o **Stable Diffusion (Automatic1111 WebUI)** otimizado para sua **NVIDIA GeForce GTX 1660 (6GB VRAM)**.
 
 Com esse setup, você poderá gerar retratos de personagens únicos e de alta qualidade, incluindo conteúdo adulto (+18), diretamente no RPG-IA.
 
@@ -11,7 +11,7 @@ Com esse setup, você poderá gerar retratos de personagens únicos e de alta qu
 ## 📋 Pré-requisitos
 
 ✅ **Hardware:**
-- GPU: NVIDIA GeForce GTX 1660 (4GB VRAM) ✓
+- GPU: NVIDIA GeForce GTX 1660 (6GB VRAM) ✓
 - RAM: 16GB ✓
 - Espaço em disco: ~10GB livres
 
@@ -71,7 +71,7 @@ Com esse setup, você poderá gerar retratos de personagens únicos e de alta qu
    cd stable-diffusion-webui
    ```
 
-### Passo 4: Configurar para GTX 1660 (4GB VRAM)
+### Passo 4: Configurar para GTX 1660 (6GB VRAM)
 
 Criar/editar arquivo `webui-user.bat` com as otimizações:
 
@@ -88,9 +88,9 @@ call webui.bat
 
 **Explicação das flags:**
 - `--api` → Habilita REST API (porta 7860) para integração com RPG-IA
-- `--medvram` → Otimiza para GPUs com 4GB VRAM
+- `--medvram` → Otimiza para GPUs com 4 a 6GB de VRAM
 - `--xformers` → Acelera geração em ~30% (usa menos VRAM)
-- `--no-half-vae` → Evita artefatos em imagens (problema comum em 4GB)
+- `--no-half-vae` → Evita artefatos em imagens (problema comum em GPUs 16xx)
 
 ### Passo 5: Baixar Modelo SD 1.5
 
@@ -99,7 +99,7 @@ call webui.bat
    mkdir models\Stable-diffusion
    ```
 
-2. Baixar modelo **SD 1.5** (recomendado para 4GB VRAM):
+2. Baixar modelo **SD 1.5** (leve e rápido na 6GB VRAM):
    - Link: https://huggingface.co/runwayml/stable-diffusion-v1-5
    - Arquivo: `v1-5-pruned-emaonly.safetensors` (~4GB)
    - Salvar em: `C:\StableDiffusion\stable-diffusion-webui\models\Stable-diffusion\`

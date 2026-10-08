@@ -5,9 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>RPG IA</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
-  <link rel="stylesheet" href="/static/css/style.css?v=11" />
+  <link rel="stylesheet" href="/static/css/style.css?v=12" />
 </head>
 <body>
+
+<div id="toasts" class="toasts" aria-live="polite"></div>
 
 <!-- TELA 1: SELEÇÃO DE PERSONAGEM -->
 <div id="screen-select" class="screen active">
@@ -17,9 +19,13 @@
       <h1>RPG <span class="accent">IA</span></h1>
       <p class="subtitle">Escolha seu personagem e entre no mundo</p>
     </div>
-    <div id="status-bar" class="status-bar">
-      <span id="status-dot" class="dot offline"></span>
-      <span id="status-text">Verificando Ollama...</span>
+    <div class="select-toolbar">
+      <div id="status-bar" class="status-bar">
+        <span id="status-dot" class="dot offline"></span>
+        <span id="status-text">Verificando Ollama...</span>
+      </div>
+      <button class="btn-secondary-sm" data-action="new-character">➕ Novo personagem</button>
+      <button class="btn-secondary-sm" data-action="open-settings">⚙️ Configurações</button>
     </div>
     <div id="character-grid" class="character-grid">
       <div class="loading-spinner">Carregando personagens...</div>
@@ -42,148 +48,73 @@
       </div>
     </div>
     <div class="mode-cards">
-      <div class="mode-card" onclick="selectMode('narrative')">
+      <div class="mode-card" data-action="select-mode" data-mode="narrative">
         <div class="mode-icon">📖</div>
         <div class="mode-name">Narrativo</div>
         <div class="mode-desc">Pura história. Sem mecânicas, sem números. Total liberdade narrativa.</div>
-        <div class="mode-features">
-          <span class="mode-tag">Livre</span>
-          <span class="mode-tag">Imersivo</span>
-        </div>
+        <div class="mode-features"><span class="mode-tag">Livre</span><span class="mode-tag">Imersivo</span></div>
       </div>
-      <div class="mode-card" onclick="selectMode('medium')">
+      <div class="mode-card" data-action="select-mode" data-mode="medium">
         <div class="mode-icon">⚖️</div>
         <div class="mode-name">Médio</div>
         <div class="mode-desc">Escolha raça e classe. Tracker de relacionamento e inventário simples.</div>
-        <div class="mode-features">
-          <span class="mode-tag">Raça</span>
-          <span class="mode-tag">Classe</span>
-          <span class="mode-tag">Relacionamento</span>
-        </div>
+        <div class="mode-features"><span class="mode-tag">Raça</span><span class="mode-tag">Classe</span><span class="mode-tag">Relacionamento</span></div>
       </div>
-      <div class="mode-card" onclick="selectMode('full')">
+      <div class="mode-card" data-action="select-mode" data-mode="full">
         <div class="mode-icon">🎲</div>
         <div class="mode-name">Completo</div>
         <div class="mode-desc">Atributos, HP, XP, nível, quests e rolagem automática de dados.</div>
         <div class="mode-features">
-          <span class="mode-tag accent-tag">Stats</span>
-          <span class="mode-tag accent-tag">XP/Level</span>
-          <span class="mode-tag accent-tag">Quests</span>
-          <span class="mode-tag accent-tag">Dados</span>
+          <span class="mode-tag accent-tag">Stats</span><span class="mode-tag accent-tag">XP/Level</span>
+          <span class="mode-tag accent-tag">Quests</span><span class="mode-tag accent-tag">Dados</span>
         </div>
       </div>
     </div>
-    <button class="btn-cancel" onclick="closeModalMode()">Cancelar</button>
+    <button class="btn-cancel" data-action="close-mode">Cancelar</button>
   </div>
 </div>
 
-<!-- TELA 2: CRIAÇÃO DE PERSONAGEM -->
+<!-- TELA 2: CRIAÇÃO DE PERSONAGEM JOGADOR -->
 <div id="screen-create" class="screen">
   <div class="create-container">
     <div class="create-header">
-      <button class="btn-back" onclick="showScreen('screen-select')">← Voltar</button>
+      <button class="btn-back" data-action="show-select">← Voltar</button>
       <h2>Criar Personagem</h2>
       <div id="create-mode-badge" class="mode-badge">Médio</div>
     </div>
     <div class="create-form">
-
-      <!-- Nome + Idade -->
       <div class="form-row">
         <div class="form-group" style="flex:2">
-          <label>Nome do personagem</label>
+          <label for="input-player-name">Nome do personagem</label>
           <input type="text" id="input-player-name" placeholder="Ex: Kael Darkwood" maxlength="40" />
         </div>
         <div class="form-group" style="flex:1">
-          <label>Idade</label>
-          <input type="number" id="input-player-age" placeholder="26" min="1" max="999" value="26" />
+          <label for="input-player-age">Idade (18+)</label>
+          <input type="number" id="input-player-age" min="18" max="999" value="26" />
         </div>
       </div>
-
-      <!-- Raça -->
       <div class="form-group">
         <label>Raça</label>
         <div id="race-grid" class="race-class-grid"></div>
         <div id="race-detail" class="option-detail" style="display:none"></div>
       </div>
-
-      <!-- Classe -->
       <div class="form-group">
         <label>Classe</label>
         <div id="class-grid" class="race-class-grid"></div>
         <div id="class-detail" class="option-detail" style="display:none"></div>
       </div>
-
-      <!-- Aparência -->
       <div class="form-group" id="appearance-section">
-        <label>Aparência <span class="label-hint">(opcional — descreva como seu personagem se parece)</span></label>
+        <label for="input-appearance">Aparência <span class="label-hint">(opcional)</span></label>
         <textarea id="input-appearance" placeholder="Ex: Alto, cabelos escuros, cicatriz no rosto esquerdo, olhos verdes. Voz grave, postura imponente..." rows="5" maxlength="400"></textarea>
       </div>
-
-      <!-- Atributos (só modo FULL) -->
       <div id="attributes-section" style="display:none">
         <div class="form-group">
           <label>Atributos <span class="label-hint">(base 10 cada, distribua +12 pontos, mín 8 máx 18)</span></label>
-          <div id="points-info" class="points-info">Pontos restantes: <strong id="points-left">12</strong></div>
-          <div class="attr-grid">
-            <div class="attr-item">
-              <span class="attr-icon">💪</span><span class="attr-label">Força</span>
-              <div class="attr-controls">
-                <button onclick="changeAttr('STR',-1)">−</button>
-                <span id="attr-STR" class="attr-value">10</span>
-                <button onclick="changeAttr('STR',1)">+</button>
-              </div>
-              <span id="mod-STR" class="attr-mod">+0</span>
-            </div>
-            <div class="attr-item">
-              <span class="attr-icon">🏃</span><span class="attr-label">Destreza</span>
-              <div class="attr-controls">
-                <button onclick="changeAttr('DEX',-1)">−</button>
-                <span id="attr-DEX" class="attr-value">10</span>
-                <button onclick="changeAttr('DEX',1)">+</button>
-              </div>
-              <span id="mod-DEX" class="attr-mod">+0</span>
-            </div>
-            <div class="attr-item">
-              <span class="attr-icon">❤️</span><span class="attr-label">Constituição</span>
-              <div class="attr-controls">
-                <button onclick="changeAttr('CON',-1)">−</button>
-                <span id="attr-CON" class="attr-value">10</span>
-                <button onclick="changeAttr('CON',1)">+</button>
-              </div>
-              <span id="mod-CON" class="attr-mod">+0</span>
-            </div>
-            <div class="attr-item">
-              <span class="attr-icon">🧠</span><span class="attr-label">Inteligência</span>
-              <div class="attr-controls">
-                <button onclick="changeAttr('INT',-1)">−</button>
-                <span id="attr-INT" class="attr-value">10</span>
-                <button onclick="changeAttr('INT',1)">+</button>
-              </div>
-              <span id="mod-INT" class="attr-mod">+0</span>
-            </div>
-            <div class="attr-item">
-              <span class="attr-icon">🔮</span><span class="attr-label">Sabedoria</span>
-              <div class="attr-controls">
-                <button onclick="changeAttr('WIS',-1)">−</button>
-                <span id="attr-WIS" class="attr-value">10</span>
-                <button onclick="changeAttr('WIS',1)">+</button>
-              </div>
-              <span id="mod-WIS" class="attr-mod">+0</span>
-            </div>
-            <div class="attr-item">
-              <span class="attr-icon">✨</span><span class="attr-label">Carisma</span>
-              <div class="attr-controls">
-                <button onclick="changeAttr('CHA',-1)">−</button>
-                <span id="attr-CHA" class="attr-value">10</span>
-                <button onclick="changeAttr('CHA',1)">+</button>
-              </div>
-              <span id="mod-CHA" class="attr-mod">+0</span>
-            </div>
-          </div>
+          <div class="points-info">Pontos restantes: <strong id="points-left">12</strong></div>
+          <div id="attr-grid" class="attr-grid"></div>
         </div>
       </div>
-
-      <button class="btn-primary" onclick="confirmCreatePlayer()">Entrar no mundo ⚔️</button>
+      <button id="btn-confirm-create" class="btn-primary" data-action="confirm-create">Entrar no mundo ⚔️</button>
     </div>
   </div>
 </div>
@@ -194,48 +125,35 @@
 
     <!-- COLUNA 1: Painel do Personagem -->
     <div class="char-panel" id="char-panel" style="width:220px;min-width:160px;max-width:360px;flex-shrink:0">
-
-      <!-- Imagem principal -->
       <div class="char-portrait-wrap">
         <div class="char-portrait" id="char-portrait">
           <div class="char-portrait-placeholder" id="char-portrait-placeholder">
             <span id="portrait-emoji" class="portrait-emoji">👤</span>
             <div class="portrait-scanlines"></div>
           </div>
-          <img id="char-portrait-img" class="char-portrait-img" src="" alt="" style="display:none" onerror="this.style.display='none';document.getElementById('char-portrait-placeholder').style.display='flex'" />
-          
-          <!-- Loading overlay durante geração -->
+          <img id="char-portrait-img" class="char-portrait-img" src="" alt="" style="display:none" />
           <div class="portrait-loading" id="portrait-loading" style="display:none">
             <div class="loading-spinner-sd"></div>
-            <div class="loading-text">Gerando retrato...</div>
-            <div class="loading-subtext">Aguarde 30-60s</div>
+            <div class="loading-text" id="portrait-loading-text">Gerando imagem...</div>
+            <div class="loading-subtext">Pode levar de 30 a 90s</div>
           </div>
         </div>
-
-        <!-- Botão para gerar retrato com IA -->
-        <button class="btn-generate-portrait" id="btn-generate-portrait" onclick="generatePortrait()" style="display:none">
+        <button class="btn-generate-portrait" id="btn-generate-portrait" data-action="generate-portrait" style="display:none">
           <span>✨</span> Gerar Retrato com IA
         </button>
-
-        <!-- Expressões / variações -->
-        <div class="char-expressions" id="char-expressions">
-          <!-- preenchido via JS -->
-        </div>
       </div>
 
-      <!-- Info do personagem -->
       <div class="char-panel-info">
         <div id="panel-char-name" class="panel-char-name">Personagem</div>
         <div id="panel-char-world" class="panel-char-world"></div>
         <div id="panel-mode-badge" class="mode-badge-sm">Narrativo</div>
       </div>
 
-      <!-- Separador "mesa do dado" -->
       <div class="dice-table" id="dice-table">
         <div class="dice-table-label">Mesa de Dados</div>
         <div class="dice-table-surface">
           <div class="dice-table-ring"></div>
-          <button class="btn-roll-table" id="btn-roll-table" onclick="manualRoll()" style="display:none">
+          <button class="btn-roll-table" id="btn-roll-table" data-action="manual-roll" style="display:none">
             <span class="dice-roll-icon">🎲</span>
             <span>Rolar d20</span>
           </button>
@@ -245,48 +163,44 @@
           </div>
         </div>
       </div>
-
     </div>
 
-    <!-- ALÇA RESIZE 1 -->
     <div class="resize-handle" id="resize-left"></div>
 
     <!-- COLUNA 2: Chat principal -->
     <div class="chat-main" style="flex:1;min-width:400px">
       <div class="chat-topbar">
-        <button class="btn-back-sm" onclick="goBack()">← Sair</button>
+        <button class="btn-back-sm" data-action="go-back">← Sair</button>
         <div class="chat-topbar-info">
           <span id="topbar-char-name"></span>
           <span id="topbar-session" class="topbar-session"></span>
         </div>
-        <button class="btn-secondary-sm" onclick="clearChat()">🗑️ Nova</button>
+        <button class="btn-secondary-sm" data-action="generate-scene" id="btn-scene" title="Gerar imagem da cena atual">🖼️ Cena</button>
+        <button class="btn-secondary-sm" data-action="open-memory" title="Ver e editar a memória da história">🧠 Memória</button>
+        <button class="btn-secondary-sm" data-action="toggle-autoplay" id="btn-autoplay" title="Ler as respostas em voz alta">🔇 Voz</button>
+        <button class="btn-secondary-sm" data-action="open-settings" title="Configurações">⚙️</button>
+        <button class="btn-secondary-sm" data-action="new-chat">🗑️ Nova</button>
       </div>
       <div id="messages" class="messages"></div>
       <div class="input-area">
         <div class="input-wrapper">
-          <textarea id="user-input" placeholder="O que você faz ou diz?" rows="1"
-            maxlength="2000" onkeydown="handleKeyDown(event)" oninput="autoResize(this)"></textarea>
-          <button id="send-btn" onclick="sendMessage()">➤</button>
+          <textarea id="user-input" placeholder="O que você faz ou diz?" rows="1" maxlength="2000"></textarea>
+          <button id="send-btn" data-action="send" title="Enviar">➤</button>
+          <button id="stop-btn" data-action="stop" title="Parar a resposta" style="display:none">■</button>
         </div>
-        <div class="input-hint">Enter para enviar · Shift+Enter para nova linha</div>
+        <div class="input-hint">Enter envia · Shift+Enter quebra linha · Ctrl+Z na caixa vazia desfaz a última troca</div>
       </div>
     </div>
 
-    <!-- ALÇA RESIZE 2 -->
     <div class="resize-handle" id="resize-right"></div>
 
     <!-- COLUNA 3: Sidebar RPG -->
     <div class="sidebar" id="sidebar" style="width:200px;min-width:160px;max-width:360px;flex-shrink:0">
-
       <div id="rpg-panel-full" style="display:none">
-
-        <!-- Player info -->
         <div class="sidebar-section">
           <div class="section-title" id="player-title">Personagem</div>
           <div id="player-race-class" class="player-race-class"></div>
         </div>
-
-        <!-- Relacionamento -->
         <div class="sidebar-section">
           <div class="section-title">Relacionamento</div>
           <div class="rel-wrap">
@@ -295,8 +209,6 @@
           </div>
           <div id="rel-label" class="rel-label">Neutro</div>
         </div>
-
-        <!-- Stats (só modo FULL) -->
         <div id="stats-section" class="sidebar-section" style="display:none">
           <div class="section-title">Status — <span id="level-text">Nível 1</span></div>
           <div class="bar-row">
@@ -311,39 +223,68 @@
           </div>
           <div id="attrs-mini" class="attrs-mini"></div>
         </div>
-
-        <!-- Inventário -->
         <div class="sidebar-section">
           <div class="section-title">Inventário <span id="gold-badge" class="gold-badge"></span></div>
-          <div id="inventory-list" class="inventory-list">
-            <span class="empty-hint">Vazio</span>
-          </div>
+          <div id="inventory-list" class="inventory-list"><span class="empty-hint">Vazio</span></div>
         </div>
-
-        <!-- Quests -->
         <div id="quests-section" class="sidebar-section" style="display:none">
           <div class="section-title">Missões</div>
-          <div id="quests-list" class="quests-list">
-            <span class="empty-hint">Nenhuma missão ativa</span>
-          </div>
+          <div id="quests-list" class="quests-list"><span class="empty-hint">Nenhuma missão ativa</span></div>
         </div>
-
       </div>
-
-      <!-- Modo narrativo: só info básica -->
       <div id="rpg-panel-narrative">
         <div class="sidebar-section">
           <div class="section-title">Modo Narrativo</div>
           <p class="narrative-hint">Pura história. Sem mecânicas.</p>
         </div>
       </div>
-
     </div>
 
   </div>
 </div>
 
+<!-- MODAL: MEMÓRIA -->
+<div id="modal-memory" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <h3 class="modal-title">🧠 Memória da história</h3>
+    <p class="modal-help">Resumo do que já saiu da janela de contexto. O modelo recebe isto em todas as respostas. Você pode corrigir à mão: o que escrever aqui vira a verdade da história.</p>
+    <textarea id="memory-text" class="modal-textarea" rows="10" maxlength="4000" placeholder="Ainda vazio. O resumo é criado automaticamente quando a conversa passa da janela de contexto."></textarea>
+    <div id="memory-meta" class="modal-help"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" data-action="close-memory">Fechar</button>
+      <button class="btn-primary" data-action="save-memory">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: CONFIGURAÇÕES -->
+<div id="modal-settings" class="modal-overlay" style="display:none">
+  <div class="modal modal-wide">
+    <h3 class="modal-title">⚙️ Configurações</h3>
+    <form id="settings-form" class="settings-form" autocomplete="off"></form>
+    <div class="modal-actions">
+      <button class="btn-cancel" data-action="close-settings">Cancelar</button>
+      <button class="btn-primary" data-action="save-settings">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EDITOR DE PERSONAGEM -->
+<div id="modal-editor" class="modal-overlay" style="display:none">
+  <div class="modal modal-wide">
+    <h3 class="modal-title" id="editor-title">Novo personagem</h3>
+    <p class="modal-help">Todos os personagens precisam ser adultos (18+). Idade abaixo disso ou texto que indique menor de idade é recusado ao salvar.</p>
+    <form id="editor-form" class="settings-form" autocomplete="off"></form>
+    <div id="editor-error" class="form-error" style="display:none"></div>
+    <div class="modal-actions">
+      <button class="btn-danger" data-action="delete-character" id="btn-delete-character" style="display:none">Apagar</button>
+      <button class="btn-cancel" data-action="close-editor">Cancelar</button>
+      <button class="btn-primary" data-action="save-character">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <script src="/static/js/dice.js?v=20"></script>
-<script src="/static/js/app.js?v=8"></script>
+<script type="module" src="/static/js/main.js?v=1"></script>
 </body>
 </html>

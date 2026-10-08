@@ -12,7 +12,7 @@ Leia antes de qualquer coisa.
 
 **Stack:**
 - Backend: Python + FastAPI (porta 8000)
-- LLM: Ollama rodando local com modelo `deepseek-r1:7b` (porta 11434)
+- LLM: Ollama local (porta 11434), modelo escolhido nas Configurações
 - Frontend: HTML + CSS + JavaScript Vanilla (sem frameworks)
 - Imagens: Stable Diffusion via Automatic1111 (porta 7860, opcional)
 
@@ -55,36 +55,40 @@ ollama run deepseek-r1:7b
 
 ```
 rpg-ia/
-├── AI_CONTEXT.md              # Este arquivo
-├── DEVELOPMENT.md             # Histórico completo de desenvolvimento
-├── INSTALL_SD.md              # Guia de instalação do Stable Diffusion
-├── requirements.txt           # Dependências Python
-├── 🎮 Iniciar RPG-IA.bat      # Launcher
+├── AI_CONTEXT.md / DEVELOPMENT.md / INSTALL_SD.md / README.md
+├── requirements.txt, requirements-dev.txt   # runtime / testes
+├── start.ps1, 🎮 Iniciar RPG-IA.bat          # Launcher
 │
 ├── backend/
-│   ├── main.py                # FastAPI: rotas REST + endpoints SD
-│   ├── sd_client.py           # Integração com Stable Diffusion
-│   ├── rpg_engine.py          # Engine RPG (d20, XP, combate)
-│   ├── rpg_models.py          # Modelos Pydantic
-│   ├── session_manager.py     # Gerenciamento de sessões
-│   ├── character_manager.py   # Carregamento de personagens/mundos
-│   ├── ollama_client.py       # Cliente Ollama (streaming SSE)
-│   ├── config.py              # Configurações (HOST, PORT, paths)
-│   └── models.py              # Modelos base (ChatRequest, etc.)
+│   ├── main.py                # App FastAPI: monta estáticos e inclui os routers
+│   ├── routers/               # system, characters, sessions, chat, images
+│   ├── config.py              # Infra: HOST, PORT, URLs, pastas (aceita variáveis de ambiente)
+│   ├── settings_manager.py    # Preferências em data/settings.json (modelo, temperatura, voz...)
+│   ├── ollama_client.py       # System prompt, stream, filtro de <think>, unload da VRAM
+│   ├── memory.py              # Janela por tokens + resumo automático da história
+│   ├── sd_client.py           # Automatic1111: prompts, geração
+│   ├── scene.py               # Cena do chat: LLM extrai tags, SD gera, VRAM alternada
+│   ├── tts_client.py          # Voz via Piper (a engine "browser" roda no frontend)
+│   ├── safety.py              # Regra 18+ (idade, termos, tags do SD)
+│   ├── storage.py             # safe_id, escrita atômica de JSON
+│   ├── session_manager.py     # Sessões (histórico completo, resumo, cenas), lock por sessão
+│   ├── character_manager.py   # CRUD de personagens/mundos com validação
+│   ├── rpg_engine.py / rpg_models.py / models.py
 │
 ├── frontend/
-│   ├── index.html             # Interface principal (3 colunas)
+│   ├── index.html
 │   └── static/
-│       ├── css/style.css      # Tema dark cyberpunk
-│       ├── js/
-│       │   ├── app.js         # Lógica principal do frontend
-│       │   └── dice.js        # Animação dado D20 com arabesco
-│       └── images/characters/ # PNGs gerados pelo SD (gitignored)
+│       ├── css/style.css
+│       └── js/                # Módulos ES (sem build): main, chat, messages, screens,
+│                              # sidebar, portrait, settings, editor, memory, tts, forms,
+│                              # api, state, util, layout + dice.js (clássico)
 │
-└── data/
-    ├── characters/            # JSONs dos personagens
-    ├── worlds/                # JSONs dos mundos
-    └── sessions/              # Histórico de conversas (gitignored)
+├── data/
+│   ├── characters/, worlds/   # JSONs (editáveis também pela interface)
+│   ├── sessions/              # Conversas (gitignored)
+│   ├── scenes/                # Imagens de cena geradas (gitignored)
+│   └── settings.json          # Preferências (gitignored)
+└── tests/                     # pytest com Ollama/SD falsos + e2e_ui.py (Playwright)
 ```
 
 ---
@@ -92,51 +96,47 @@ rpg-ia/
 ## Endpoints da API
 
 ```
-GET  /                              → Frontend (index.html)
-GET  /api/status                    → Status Ollama
-GET  /api/characters                → Lista personagens
-GET  /api/worlds                    → Lista mundos
-GET  /api/rpg/options               → Raças e classes disponíveis
-POST /api/session/new               → Criar sessão
-POST /api/chat                      → Chat (streaming SSE)
-POST /api/player/create             → Criar personagem jogador
-POST /api/roll                      → Rolar dado manualmente
-POST /api/quest/add                 → Adicionar quest
-PATCH /api/quest/complete           → Completar quest
-
-GET  /api/sd/status                 → Verifica SD disponível
-POST /api/sd/generate-portrait      → Gera retrato via SD
-GET  /api/sd/check-portrait/{id}    → Verifica se retrato existe
-DELETE /api/sd/delete-portrait/{id} → Deleta retrato (forçar regeneração)
+GET  /api/status, /api/settings          PUT /api/settings
+GET/POST /api/characters                 GET/PUT/DELETE /api/characters/{id}
+GET  /api/worlds, /api/worlds/{id}       PUT /api/worlds/{id}
+GET  /api/rpg/options
+POST /api/session/new                    GET/DELETE /api/session/{id}
+GET  /api/sessions                       GET/PUT /api/session/{id}/memory
+POST /api/session/edit                   (edita o texto de uma mensagem)
+POST /api/chat                           (SSE: eventos roll | token | error | done, JSON por linha)
+POST /api/chat/regenerate, /api/chat/undo
+POST /api/player/create                  GET /api/player/{session_id}
+POST /api/roll, /api/quest/add           PATCH /api/quest/complete
+GET  /api/sd/status                      POST /api/scene/generate
+POST /api/sd/generate-portrait           GET /api/sd/check-portrait/{id}   DELETE /api/sd/delete-portrait/{id}
+GET  /api/tts/status                     POST /api/tts  (Piper, devolve WAV)
 ```
 
 ---
 
 ## Features Implementadas
 
-### Interface
-- Layout 3 colunas com painéis redimensionáveis (drag)
-- Tema dark cyberpunk (CSS custom properties)
-- Animação dado D20 com textura arabesco (dice.js)
-- Indicador de typing
-- Auto-scroll do chat
-- Botão "✨ Gerar Retrato com IA" (aparece quando SD disponível)
-- Loading overlay durante geração de imagem
+- Chat em streaming com filtro de blocos de raciocínio (`<think>`), regenerar, desfazer, editar e parar.
+- Memória: o histórico completo fica em disco; ao modelo vai uma janela que respeita o orçamento de tokens
+  (`num_ctx - num_predict - system prompt`) mais um resumo automático do que saiu da janela. O resumo é editável.
+- Imagens: retrato do personagem e cenas no chat. O LLM extrai tags da cena, que se juntam às
+  `appearance_tags` fixas do personagem (rosto consistente). Na GPU de 6 GB o LLM é descarregado
+  da VRAM antes do SD gerar (`scene_auto_unload`).
+- Voz: engine `browser` (Web Speech API, sem instalar nada) ou `piper` (CPU). Ler só falas ou tudo.
+- Galeria com criador/editor de personagem na interface.
+- Configurações na interface (modelo instalado, temperatura, min_p, contexto, tamanho da resposta...).
+- RPG: 3 modos (narrativo, médio, completo), d20 automático, XP, quests, relacionamento.
 
-### RPG
-- 3 modos de jogo: Completo (d20 automático), Intermediário, Narrativo
-- Sistema d20 com modificadores por atributo
-- XP e level up automático
-- Detecção de ações de risco no texto
-- Sistema de quests
-- Relacionamento dinâmico (NPC approval)
+---
 
-### Imagens (Stable Diffusion)
-- Cache automático (não regenera se PNG já existe)
-- Prompts gerados automaticamente por raça/classe
-- NSFW habilitado por padrão (nsfw=True)
-- Configurado para GTX 1660 (4GB VRAM): 512x768, 25 steps, DPM++ 2M Karras
-- Precisa Automatic1111 rodando com: `--api --medvram --xformers --no-half-vae`
+## Regras do Projeto
+
+1. **Todo personagem é adulto (18+).** `safety.py` valida idade e termos na criação de personagem e do
+   jogador, e as tags do SD passam por filtro. O negative prompt do SD sempre inclui termos de menor
+   de idade, mesmo com `sd_nsfw` ligado. Nunca remover essas travas.
+2. Conteúdo adulto roda no modelo local do usuário. A IA que desenvolve o projeto não escreve
+   cenas explícitas nem prompts explícitos; escreve só o código e a estrutura.
+3. Todo id vindo da rede passa por `safe_id` antes de virar nome de arquivo.
 
 ---
 
@@ -152,36 +152,27 @@ DELETE /api/sd/delete-portrait/{id} → Deleta retrato (forçar regeneração)
 
 ## Decisões de Design Importantes
 
-1. **Sem frameworks frontend** — Zero overhead, 100% offline, sem CDN
-2. **Streaming via SSE** — Respostas em tempo real sem WebSocket
-3. **NSFW habilitado** — Projeto de uso pessoal, sem filtros
-4. **Cache de imagens** — PNG salvo em disco, não regenera automaticamente
-5. **Ollama local** — deepseek-r1:7b, privacidade total, sem API keys
+1. **Sem frameworks frontend**: módulos ES nativos, 100% offline, sem CDN e sem build.
+2. **Streaming via SSE** com um objeto JSON por evento (nada de sentinelas no texto).
+3. **GPU de 6 GB (GTX 1660)**: LLM e Stable Diffusion não cabem juntos, então se alternam.
+   Padrão `num_ctx=4096` para um 7B em Q4. Dica: `OLLAMA_FLASH_ATTENTION=1` e `OLLAMA_KV_CACHE_TYPE=q8_0`.
+4. **Ollama local**: o modelo é escolhido nas Configurações. Para roleplay, 7B a 12B de RP/chat rendem
+   mais que o `deepseek-r1:7b` (modelo de raciocínio, gasta tokens "pensando").
+5. **Servidor só em 127.0.0.1 e sem CORS aberto**.
 
 ---
 
-## O que Está Pendente (Próximas Features)
+## O que Está Pendente
 
-### Curto Prazo
-- [ ] Carregamento de sessões antigas na UI
-- [ ] Stats funcionais (HP/Mana integrados ao engine)
-- [ ] Botão "Regenerar Retrato" (force_regenerate=True)
-
-### Médio Prazo
-- [ ] Sistema de inventário funcional
-- [ ] Expressões de personagens (happy, angry, sad, etc.)
-- [ ] Sons e músicas ambiente
-
-### Longo Prazo
-- [ ] Integração Proton Drive para sync de sessões
-- [ ] Batch generation de retratos
-- [ ] Sistema de expressões via img2img
+- [ ] Expressões do personagem (variações de retrato via img2img)
+- [ ] Inventário editável pela interface e itens dados pela história
+- [ ] Sons e música ambiente
+- [ ] Piper foi escrito mas só testado com binário falso: validar com o Piper real no Windows
 
 ---
 
 ## Problemas Conhecidos / Avisos
 
-- Arquivo `backend/main (# Edit conflict 2026-09-28 bueqclC #).py` pode ser deletado (é conflito antigo do Kiro)
 - `venv/` não está no repositório, precisa recriar com `pip install -r requirements.txt`
 - Sessões ficam em `data/sessions/` (gitignored), sincronizar via Proton Drive se necessário
 - Imagens geradas ficam em `frontend/static/images/characters/` (gitignored)
@@ -217,7 +208,7 @@ pip install -r requirements.txt
 
 ## Hardware do Usuário (PC Principal)
 
-- GPU: NVIDIA GeForce GTX 1660 (4GB VRAM)
+- GPU: NVIDIA GeForce GTX 1660 (6GB VRAM)
 - RAM: 16GB
 - OS: Windows 11
 - Shell: PowerShell 7

@@ -1,25 +1,32 @@
 """
 Config central do RPG IA.
-Tudo que pode mudar fica aqui — modelo, porta, limites de memória.
+
+Valores fixos de infraestrutura (portas, pastas, URLs) ficam aqui e podem ser
+sobrescritos por variável de ambiente. Preferências que você muda jogando
+(modelo, temperatura, voz...) ficam em settings_manager.py e na tela de
+Configurações, salvas em data/settings.json.
 """
 
-# Ollama
-OLLAMA_BASE_URL = "http://localhost:11434"
-OLLAMA_MODEL = "deepseek-r1:7b"
+import os
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Servidor
-HOST = "127.0.0.1"
-PORT = 8000
+HOST = os.environ.get("RPG_HOST", "127.0.0.1")
+PORT = int(os.environ.get("RPG_PORT", "8000"))
 
-# Memória de conversa — quantas mensagens o modelo "lembra" por sessão
-# Com 4GB VRAM e deepseek-r1:7b, 20 turnos é seguro sem overflow
-MAX_HISTORY_TURNS = 20
+# Ollama
+OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 
-# Diretórios de dados (relativos à raiz do projeto)
-import os
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_DIR = os.path.join(BASE_DIR, "data")
+# Stable Diffusion (Automatic1111 com --api)
+SD_API_URL = os.environ.get("SD_API_URL", "http://127.0.0.1:7860")
+
+# Diretórios de dados
+DATA_DIR = os.environ.get("RPG_DATA_DIR", os.path.join(BASE_DIR, "data"))
 CHARACTERS_DIR = os.path.join(DATA_DIR, "characters")
 WORLDS_DIR = os.path.join(DATA_DIR, "worlds")
 SESSIONS_DIR = os.path.join(DATA_DIR, "sessions")
+SCENES_DIR = os.path.join(DATA_DIR, "scenes")
+SETTINGS_FILE = os.path.join(DATA_DIR, "settings.json")
 FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
+PORTRAITS_DIR = os.path.join(FRONTEND_DIR, "static", "images", "characters")

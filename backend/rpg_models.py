@@ -11,7 +11,7 @@ STR, DEX, CON, INT, WIS, CHA
 Cada um gera um modifier: (valor - 10) // 2
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Dict
 from enum import Enum
 
@@ -245,13 +245,27 @@ class RPGState(BaseModel):
 
 class CreatePlayerRequest(BaseModel):
     session_id: str
-    name: str
+    name: str = Field(min_length=1, max_length=40)
     race: str
     char_class: str
     mode: GameMode
     age: int = 25
-    appearance: str = ""
+    appearance: str = Field(default="", max_length=400)
     attributes: Optional[Dict[str, int]] = None
+
+    @field_validator("age")
+    @classmethod
+    def _adult_only(cls, v: int) -> int:
+        from backend.safety import validate_age
+        validate_age(v, "personagem do jogador")
+        return v
+
+    @field_validator("appearance", "name")
+    @classmethod
+    def _no_minor_markers(cls, v: str) -> str:
+        from backend.safety import validate_texts
+        validate_texts(v)
+        return v
 
 
 class UpdateRelationshipRequest(BaseModel):

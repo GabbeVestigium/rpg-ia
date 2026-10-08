@@ -5,6 +5,11 @@
 # ============================================================
 
 $PythonExe = "C:\Users\gabri\AppData\Local\Programs\Python\Python312\python.exe"
+if (-not (Test-Path $PythonExe)) {
+    # Plano B: qualquer Python 3 no PATH
+    $found = Get-Command python -ErrorAction SilentlyContinue
+    if ($found) { $PythonExe = $found.Source }
+}
 $ProjectDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 Write-Host ""
@@ -45,6 +50,9 @@ try {
 } catch {
     Write-Host "[AVISO] Ollama não está respondendo." -ForegroundColor Yellow
     Write-Host "        Iniciando ollama serve em background..." -ForegroundColor Yellow
+    # Economiza VRAM na GPU de 6 GB (só vale quando o script é quem inicia o Ollama)
+    $env:OLLAMA_FLASH_ATTENTION = "1"
+    $env:OLLAMA_KV_CACHE_TYPE = "q8_0"
     Start-Process "ollama" -ArgumentList "serve" -WindowStyle Hidden
     Start-Sleep -Seconds 3
     Write-Host "[OK] Ollama iniciado" -ForegroundColor Green
@@ -64,4 +72,4 @@ Start-Job -ScriptBlock {
 
 # Roda o servidor (bloqueante — mantém o terminal aberto)
 Set-Location $ProjectDir
-& $VenvPython -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
+& $VenvPython -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
