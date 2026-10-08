@@ -57,7 +57,7 @@ try:
         check("Trama" in page.inner_text("#topbar-char-name"), "chat abriu com a Trama")
         check(page.locator(".message.assistant .bubble").count() >= 1, "mensagem de abertura renderizada")
 
-        page.fill("#user-input", "Olá Dalila")
+        page.fill("#user-input", "Olá Lorena")
         page.keyboard.press("Enter")
         page.wait_for_selector(".message.assistant[data-index='2'] .bubble:not(.typing-cursor)")
         txt = page.inner_text(".message.assistant[data-index='2'] .bubble")
@@ -84,7 +84,7 @@ try:
         page.hover(".message[data-index='2']")
         page.click(".message[data-index='2'] [data-action=undo]")
         page.wait_for_function("document.querySelectorAll('.message').length === 1")
-        check(page.input_value("#user-input") == "Olá Dalila", "desfazer devolve o texto à caixa")
+        check(page.input_value("#user-input") == "Olá Lorena", "desfazer devolve o texto à caixa")
 
         # Cena
         page.fill("#user-input", "Vamos sentar")
@@ -98,7 +98,7 @@ try:
         # Memória
         page.click("[data-action=open-memory]")
         page.wait_for_selector("#modal-memory", state="visible")
-        page.fill("#memory-text", "Dalila confia no jogador.")
+        page.fill("#memory-text", "Lorena confia no jogador.")
         page.click("[data-action=save-memory]")
         page.wait_for_selector("#modal-memory", state="hidden")
 
@@ -174,11 +174,11 @@ try:
         page.wait_for_selector("#cast-list .cast-row")
         check(page.locator("#cast-list .cast-row").count() == 7, "sidebar mostra 7 barras do elenco")
         check(not page.is_visible("#rel-section"), "medidor único some no personagem de grupo")
-        page.fill("#user-input", "Obrigado, Dalila, eu confio em você")
+        page.fill("#user-input", "Obrigado, Lorena, eu confio em você")
         page.keyboard.press("Enter")
         page.wait_for_selector(".message.assistant[data-index='2'] .bubble:not(.typing-cursor)")
         page.wait_for_selector("#cast-list .cast-row.up")
-        check("Dalila" in page.inner_text("#cast-list .cast-row.up"), "barra da Dalila subiu depois do elogio")
+        check("Lorena" in page.inner_text("#cast-list .cast-row.up"), "barra da Lorena subiu depois do elogio")
         page.screenshot(path=f"{SHOTS}/8-cast.png")
 
         browser.close()

@@ -199,7 +199,7 @@ def test_group_character_prompt_makes_narrator_play_the_cast(client, services):
     system = services["chat_calls"][0]["messages"][0]["content"]
     assert "narrador" in system and "TODAS as personagens" in system and "**Nome:**" in system
     assert "Controle apenas" not in system
-    for name in ("Dalila", "Valéria", "Amora", "Lavínia", "Cléo", "Violeta", "Bianca"):
+    for name in ("Lorena", "Bruna", "Iara", "Lavínia", "Cléo", "Violeta", "Bianca"):
         assert name in system
 
 
@@ -218,17 +218,17 @@ def test_group_has_one_relationship_per_cast_member(client, services):
     client.post("/api/player/create", json={"session_id": sid, "name": "Tonico", "race": "humano",
                                             "char_class": "bardo", "mode": "medium", "age": 25})
     before = _scores(client, sid)
-    assert before["dalila"] == 35 and before["cleo"] == 70 and len(before) == 7  # cada uma com a sua largada
+    assert before["lorena"] == 35 and before["cleo"] == 70 and len(before) == 7  # cada uma com a sua largada
 
     client.post("/api/chat", json={"session_id": sid, "character_id": "mesa-javali",
-                                   "message": "Obrigado, Dalila, eu confio em você"})
+                                   "message": "Obrigado, Lorena, eu confio em você"})
     after = _scores(client, sid)
-    assert after["dalila"] > before["dalila"]                                   # a citada subiu
-    assert all(after[k] == before[k] for k in before if k != "dalila")        # as outras não mexeram
+    assert after["lorena"] > before["lorena"]                                   # a citada subiu
+    assert all(after[k] == before[k] for k in before if k != "lorena")        # as outras não mexeram
 
     # o prompt do modelo traz o sentimento de cada uma
     system = services["chat_calls"][-1]["messages"][0]["content"]
-    assert "Como cada uma se sente" in system and "Dalila:" in system and "Cléo:" in system
+    assert "Como cada uma se sente" in system and "Lorena:" in system and "Cléo:" in system
     assert "Relacionamento com você" not in system
 
 
