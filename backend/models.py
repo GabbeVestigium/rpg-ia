@@ -25,6 +25,7 @@ class Character(BaseModel):
     world_id: str = ""
     age: int = 25                  # Obrigatório 18+ (validado em safety.py)
     gender: str = "female"         # female / male / other (usado nas imagens)
+    summary: str = ""              # Resumo curto para o card da galeria (opcional)
     description: str               # Aparência, personalidade geral
     personality: str               # Como ela fala, reage, o que gosta/odeia
     scenario: str                  # Contexto inicial da história

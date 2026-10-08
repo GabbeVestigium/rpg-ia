@@ -54,7 +54,7 @@ export async function loadCharacters() {
           : `<span class="char-card-avatar">${escapeHtml(c.avatar_emoji)}</span>`}
         <div class="char-card-name">${escapeHtml(c.name)} <span class="char-card-age">${Number(c.age)}</span></div>
         <div class="char-card-world">${escapeHtml(c.world_id)}</div>
-        <div class="char-card-desc">${escapeHtml(c.description)}</div>
+        <div class="char-card-desc">${escapeHtml(c.summary)}</div>
         <div class="char-card-scenario"><strong>Cenário:</strong> ${escapeHtml(c.scenario)}</div>
         <div class="char-card-tags">${(c.tags || []).map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join('')}</div>
       </div>`).join('');

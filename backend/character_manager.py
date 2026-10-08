@@ -23,6 +23,22 @@ def _world_path(world_id: str) -> str:
     return os.path.join(WORLDS_DIR, f"{world_id}.json")
 
 
+def _shorten(text: str, limit: int) -> str:
+    text = text.strip()
+    if len(text) <= limit:
+        return text
+    cut = text[:limit].rsplit(" ", 1)[0].rstrip(",;:")
+    return cut + "..."
+
+
+def _auto_summary(description: str) -> str:
+    """Resumo automático para cards: primeira frase, sem marcação markdown."""
+    import re
+    plain = re.sub(r"[*_#>`]", "", description).replace("\n", " ").strip()
+    first = re.split(r"(?<=[.!?])\s", plain, maxsplit=1)[0]
+    return _shorten(first, 180)
+
+
 # ─── PERSONAGENS ──────────────────────────────────────────────────────────────
 
 def load_character(character_id: str) -> Optional[Character]:
@@ -86,8 +102,8 @@ def list_characters() -> List[dict]:
             "name":         c.name,
             "world_id":     c.world_id,
             "age":          c.age,
-            "description":  c.description,
-            "scenario":     c.scenario,
+            "summary":      c.summary or _auto_summary(c.description),
+            "scenario":     _shorten(c.scenario, 200),
             "avatar_emoji": c.avatar_emoji,
             "tags":         c.tags,
             "has_portrait": os.path.exists(os.path.join(PORTRAITS_DIR, f"{c.id}.png")),

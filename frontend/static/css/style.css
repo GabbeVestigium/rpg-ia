@@ -525,3 +525,7 @@ textarea#user-input::placeholder{color:var(--text3);}
 .form-field input[type=range]{accent-color:var(--accent);}
 .form-field output{font-size:0.8rem;color:var(--accentb);}
 .form-error{margin-top:12px;padding:10px 14px;border:1px solid var(--red);border-radius:var(--rs);color:#ffb3b3;font-size:0.88rem;}
+
+/* cards compactos: o texto longo fica no chat, não na galeria */
+.char-card-desc{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+.char-card-scenario{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}

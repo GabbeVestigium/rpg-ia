@@ -11,7 +11,7 @@ let currentFields = [];
 
 const BLANK = {
   name: '', age: 25, gender: 'female', avatar_emoji: '🧙', group: false, world_id: '', tags: '',
-  description: '', personality: '', scenario: '', first_message: '',
+  summary: '', description: '', personality: '', scenario: '', first_message: '',
   example_dialogue: '', appearance_tags: '',
 };
 
@@ -25,6 +25,7 @@ function fields(worlds) {
     { key: 'group', label: 'Personagem de grupo (o narrador interpreta um elenco)', type: 'checkbox' },
     { key: 'world_id', label: 'Mundo', type: 'select', options: [['', 'Nenhum'], ...worlds.map((w) => [w.id, w.name])] },
     { key: 'tags', label: 'Tags (separadas por vírgula)', type: 'text' },
+    { key: 'summary', label: 'Resumo para o card (1 ou 2 frases, opcional)', type: 'text' },
     { key: 'description', label: 'Aparência e história', type: 'textarea', rows: 5 },
     { key: 'personality', label: 'Personalidade e jeito de falar', type: 'textarea', rows: 5 },
     { key: 'scenario', label: 'Cenário inicial', type: 'textarea', rows: 3 },
