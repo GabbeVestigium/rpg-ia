@@ -17,6 +17,7 @@ Pasta para guardar tudo que fizermos relacionado à disciplina **Extensão II** 
   2. **ACEX - Explicação em Vídeo** (link YouTube: https://youtu.be/oxkQM3iKfco) – já concluído
 - A descrição do módulo embute um iframe com `/shared/ACEX/acex.html` (conteúdo da proposta; não veio no HTML colado).
 
+Passo a passo do que depende de você: [`GUIA_SUA_PARTE.md`](GUIA_SUA_PARTE.md).
 Detalhes completos da proposta: [`PROPOSTA.md`](PROPOSTA.md).
 
 ## Pendências / próximos passos
@@ -24,7 +25,7 @@ Detalhes completos da proposta: [`PROPOSTA.md`](PROPOSTA.md).
 - [x] Obter a proposta da ACEX e a declaração (em `materiais/`)
 - [ ] Escolher formato (vídeo 5min / 20 slides / texto 1200 palavras) e se será em grupo
 - [ ] Definir comunidade/local e reunir 10+ pessoas
-- [ ] Produzir o material (tópicos a–e)
+- [x] Produzir o material (rascunho de slides pronto – revisar)
 - [ ] Apresentação presencial: fotos + lista de presença (nome e RG, local e data)
 - [ ] Preencher Declaração e coletar assinaturas eletrônicas
 - [ ] Montar o .ZIP
@@ -37,6 +38,7 @@ Detalhes completos da proposta: [`PROPOSTA.md`](PROPOSTA.md).
 | Data | O que foi feito |
 |------|-----------------|
 | 2026-10-08 | Pasta criada; análise inicial do HTML da página. |
+| 2026-10-08 | Gerados slides (23), lista de presença e guia da sua parte. |
 | 2026-10-08 | Adicionados PDF da proposta e declaração; resumo em PROPOSTA.md. |
 
 ## Arquivos
