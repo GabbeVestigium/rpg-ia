@@ -236,7 +236,7 @@ export async function confirmCreatePlayer() {
     toast(e.message, 'error', 7000);
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Entrar no mundo ⚔️';
+    btn.textContent = 'Entrar na história';
   }
 }
 

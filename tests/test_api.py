@@ -16,7 +16,7 @@ def reply_text(events):
     return "".join(e["t"] for e in events if e["type"] == "token")
 
 
-def new_session(client, char="vex", mode="narrative"):
+def new_session(client, char="trama", mode="narrative"):
     r = client.post("/api/session/new", json={"character_id": char, "game_mode": mode})
     assert r.status_code == 200, r.text
     return r.json()["session_id"]
@@ -29,7 +29,7 @@ def test_status_picks_chat_model_over_embedding(client):
 
 def test_chat_streams_without_think_and_saves(client):
     sid = new_session(client)
-    r = client.post("/api/chat", json={"session_id": sid, "character_id": "vex", "message": "Oi"})
+    r = client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": "Oi"})
     events = sse_events(r)
     assert events[-1]["type"] == "done"
     text = reply_text(events)
@@ -42,9 +42,9 @@ def test_chat_streams_without_think_and_saves(client):
 
 def test_system_prompt_has_character_and_rules(client, services):
     sid = new_session(client)
-    client.post("/api/chat", json={"session_id": sid, "character_id": "vex", "message": "Oi"})
+    client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": "Oi"})
     system = services["chat_calls"][0]["messages"][0]["content"]
-    assert "Vex" in system and "NUNCA escreva falas" in system
+    assert "Trama" in system and "NUNCA escreva falas" in system
     assert "Exemplos de como você fala" in system
     opts = services["chat_calls"][0]["options"]
     assert opts["num_ctx"] == 4096 and opts["min_p"] == 0.05
@@ -53,7 +53,7 @@ def test_system_prompt_has_character_and_rules(client, services):
 def test_ollama_error_reports_and_does_not_keep_dangling_user_msg(client, services):
     sid = new_session(client)
     services["fail_chat"] = True
-    r = client.post("/api/chat", json={"session_id": sid, "character_id": "vex", "message": "Oi"})
+    r = client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": "Oi"})
     events = sse_events(r)
     assert any(e["type"] == "error" for e in events) and events[-1]["type"] == "done"
     hist = client.get(f"/api/session/{sid}").json()["history"]
@@ -62,9 +62,9 @@ def test_ollama_error_reports_and_does_not_keep_dangling_user_msg(client, servic
 
 def test_regenerate_replaces_last_reply(client, services):
     sid = new_session(client)
-    client.post("/api/chat", json={"session_id": sid, "character_id": "vex", "message": "Oi"})
+    client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": "Oi"})
     services["reply"] = "Segunda versão da resposta, bem diferente."
-    r = client.post("/api/chat/regenerate", json={"session_id": sid, "character_id": "vex"})
+    r = client.post("/api/chat/regenerate", json={"session_id": sid, "character_id": "trama"})
     assert "Segunda versão" in reply_text(sse_events(r))
     hist = client.get(f"/api/session/{sid}").json()["history"]
     assert [m["role"] for m in hist] == ["assistant", "user", "assistant"]
@@ -73,11 +73,11 @@ def test_regenerate_replaces_last_reply(client, services):
 
 def test_undo_returns_user_text(client):
     sid = new_session(client)
-    client.post("/api/chat", json={"session_id": sid, "character_id": "vex", "message": "Minha fala"})
-    r = client.post("/api/chat/undo", json={"session_id": sid, "character_id": "vex"})
+    client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": "Minha fala"})
+    r = client.post("/api/chat/undo", json={"session_id": sid, "character_id": "trama"})
     assert r.json()["user_text"] == "Minha fala"
     assert len(client.get(f"/api/session/{sid}").json()["history"]) == 1
-    assert client.post("/api/chat/undo", json={"session_id": sid, "character_id": "vex"}).status_code == 400
+    assert client.post("/api/chat/undo", json={"session_id": sid, "character_id": "trama"}).status_code == 400
 
 
 def test_edit_message(client):
@@ -91,11 +91,11 @@ def test_memory_summary_kicks_in_after_window(client, services):
     client.put("/api/settings", json={"history_turns": 4})
     sid = new_session(client)
     for i in range(10):
-        client.post("/api/chat", json={"session_id": sid, "character_id": "vex", "message": f"mensagem {i}"})
+        client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": f"mensagem {i}"})
     mem = client.get(f"/api/session/{sid}/memory").json()
     assert "Resumo falso" in mem["summary"] and mem["summarized_upto"] > 0
     # a janela enviada ao modelo é limitada, e o resumo entra no system prompt
-    last = [c for c in services["chat_calls"] if "Vex" in c["messages"][0]["content"]][-1]
+    last = [c for c in services["chat_calls"] if "Trama" in c["messages"][0]["content"]][-1]
     assert len(last["messages"]) - 1 <= 4 * 2 + 1
     assert "Resumo falso" in last["messages"][0]["content"]
     # o histórico completo continua salvo
@@ -149,7 +149,7 @@ def test_full_mode_auto_roll_event(client):
     client.post("/api/player/create", json={
         "session_id": sid, "name": "Kael", "race": "humano", "char_class": "guerreiro", "mode": "full",
         "attributes": {"STR": 14, "DEX": 12, "CON": 12, "INT": 10, "WIS": 10, "CHA": 10}})
-    r = client.post("/api/chat", json={"session_id": sid, "character_id": "vex",
+    r = client.post("/api/chat", json={"session_id": sid, "character_id": "trama",
                                        "message": "Eu ataco o goblin com minha espada"})
     types = [e["type"] for e in sse_events(r)]
     assert types[0] == "roll" and types[-1] == "done"
@@ -157,7 +157,7 @@ def test_full_mode_auto_roll_event(client):
 
 def test_scene_generation_unloads_llm_and_saves_image(client, services):
     sid = new_session(client)
-    client.post("/api/chat", json={"session_id": sid, "character_id": "vex", "message": "Oi"})
+    client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": "Oi"})
     r = client.post("/api/scene/generate", json={"session_id": sid})
     assert r.status_code == 200, r.text
     data = r.json()
@@ -180,11 +180,11 @@ def test_scene_nsfw_setting_only_changes_negative(client, services):
 
 
 def test_portrait_generation(client):
-    r = client.post("/api/sd/generate-portrait", json={"character_id": "vex"})
+    r = client.post("/api/sd/generate-portrait", json={"character_id": "trama"})
     assert r.status_code == 200 and r.json()["cached"] is False
-    assert client.get("/api/sd/check-portrait/vex").json()["exists"] is True
-    assert client.post("/api/sd/generate-portrait", json={"character_id": "vex"}).json()["cached"] is True
-    assert client.delete("/api/sd/delete-portrait/vex").status_code == 200
+    assert client.get("/api/sd/check-portrait/trama").json()["exists"] is True
+    assert client.post("/api/sd/generate-portrait", json={"character_id": "trama"}).json()["cached"] is True
+    assert client.delete("/api/sd/delete-portrait/trama").status_code == 200
 
 
 def test_tts_without_piper_reports_clearly(client):
@@ -194,16 +194,16 @@ def test_tts_without_piper_reports_clearly(client):
 
 
 def test_group_character_prompt_makes_narrator_play_the_cast(client, services):
-    sid = new_session(client, char="harem-eldoria")
-    client.post("/api/chat", json={"session_id": sid, "character_id": "harem-eldoria", "message": "Oi"})
+    sid = new_session(client, char="mesa-javali")
+    client.post("/api/chat", json={"session_id": sid, "character_id": "mesa-javali", "message": "Oi"})
     system = services["chat_calls"][0]["messages"][0]["content"]
     assert "narrador" in system and "TODAS as personagens" in system and "**Nome:**" in system
     assert "Controle apenas" not in system
-    for name in ("Lyra", "Seraphine", "Mirel", "Celeste", "Nyx", "Wren", "Isolde"):
+    for name in ("Zélia", "Olívia", "Tuí", "Benedita", "Nini", "Lúcia", "Anabela"):
         assert name in system
 
 
 def test_shipped_characters_are_valid_adults(client):
     chars = client.get("/api/characters").json()
-    assert {c["id"] for c in chars} >= {"harem-eldoria", "vex", "morrigan"}
+    assert {c["id"] for c in chars} >= {"mesa-javali", "trama", "sibila"}
     assert all(c["age"] >= 18 for c in chars)

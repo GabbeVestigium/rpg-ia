@@ -45,11 +45,11 @@ async def rpg_options():
         ],
         "modes": [
             {"id": "narrative", "name": "Narrativo",
-             "description": "Pura história. Sem mecânicas, sem números. Total liberdade narrativa."},
+             "description": "Só a história. Sem números, sem dados."},
             {"id": "medium", "name": "Médio",
-             "description": "Escolha raça e classe. Tracker de relacionamento e inventário simples."},
+             "description": "Você escolhe raça e classe. A relação com o personagem passa a ser medida e você carrega um inventário."},
             {"id": "full", "name": "Completo",
-             "description": "Sistema completo: atributos, HP, XP, nível, quests e rolagem de dados."},
+             "description": "Atributos, vida, nível, missões e dados rolando sozinhos quando você faz algo arriscado."},
         ],
     }
 

@@ -17,7 +17,7 @@
     <div class="logo">
       <span class="logo-icon">⚔️</span>
       <h1>RPG <span class="accent">IA</span></h1>
-      <p class="subtitle">Escolha seu personagem e entre no mundo</p>
+      <p class="subtitle">Quem vai te acompanhar hoje?</p>
     </div>
     <div class="select-toolbar">
       <div id="status-bar" class="status-bar">
@@ -51,19 +51,19 @@
       <div class="mode-card" data-action="select-mode" data-mode="narrative">
         <div class="mode-icon">📖</div>
         <div class="mode-name">Narrativo</div>
-        <div class="mode-desc">Pura história. Sem mecânicas, sem números. Total liberdade narrativa.</div>
+        <div class="mode-desc">Só a história. Sem números, sem dados.</div>
         <div class="mode-features"><span class="mode-tag">Livre</span><span class="mode-tag">Imersivo</span></div>
       </div>
       <div class="mode-card" data-action="select-mode" data-mode="medium">
         <div class="mode-icon">⚖️</div>
         <div class="mode-name">Médio</div>
-        <div class="mode-desc">Escolha raça e classe. Tracker de relacionamento e inventário simples.</div>
+        <div class="mode-desc">Você escolhe raça e classe. A relação com o personagem passa a ser medida e você carrega um inventário.</div>
         <div class="mode-features"><span class="mode-tag">Raça</span><span class="mode-tag">Classe</span><span class="mode-tag">Relacionamento</span></div>
       </div>
       <div class="mode-card" data-action="select-mode" data-mode="full">
         <div class="mode-icon">🎲</div>
         <div class="mode-name">Completo</div>
-        <div class="mode-desc">Atributos, HP, XP, nível, quests e rolagem automática de dados.</div>
+        <div class="mode-desc">Atributos, vida, nível, missões e dados rolando sozinhos quando você faz algo arriscado.</div>
         <div class="mode-features">
           <span class="mode-tag accent-tag">Stats</span><span class="mode-tag accent-tag">XP/Level</span>
           <span class="mode-tag accent-tag">Quests</span><span class="mode-tag accent-tag">Dados</span>
@@ -79,14 +79,14 @@
   <div class="create-container">
     <div class="create-header">
       <button class="btn-back" data-action="show-select">← Voltar</button>
-      <h2>Criar Personagem</h2>
+      <h2>Seu personagem</h2>
       <div id="create-mode-badge" class="mode-badge">Médio</div>
     </div>
     <div class="create-form">
       <div class="form-row">
         <div class="form-group" style="flex:2">
           <label for="input-player-name">Nome do personagem</label>
-          <input type="text" id="input-player-name" placeholder="Ex: Kael Darkwood" maxlength="40" />
+          <input type="text" id="input-player-name" placeholder="Ex: Tonico Brasa" maxlength="40" />
         </div>
         <div class="form-group" style="flex:1">
           <label for="input-player-age">Idade (18+)</label>
@@ -105,7 +105,7 @@
       </div>
       <div class="form-group" id="appearance-section">
         <label for="input-appearance">Aparência <span class="label-hint">(opcional)</span></label>
-        <textarea id="input-appearance" placeholder="Ex: Alto, cabelos escuros, cicatriz no rosto esquerdo, olhos verdes. Voz grave, postura imponente..." rows="5" maxlength="400"></textarea>
+        <textarea id="input-appearance" placeholder="Ex: alto, barba por fazer, cicatriz na sobrancelha, voz grave de quem fuma escondido." rows="5" maxlength="400"></textarea>
       </div>
       <div id="attributes-section" style="display:none">
         <div class="form-group">
@@ -114,7 +114,7 @@
           <div id="attr-grid" class="attr-grid"></div>
         </div>
       </div>
-      <button id="btn-confirm-create" class="btn-primary" data-action="confirm-create">Entrar no mundo ⚔️</button>
+      <button id="btn-confirm-create" class="btn-primary" data-action="confirm-create">Entrar na história</button>
     </div>
   </div>
 </div>
@@ -150,7 +150,7 @@
       </div>
 
       <div class="dice-table" id="dice-table">
-        <div class="dice-table-label">Mesa de Dados</div>
+        <div class="dice-table-label">Dados</div>
         <div class="dice-table-surface">
           <div class="dice-table-ring"></div>
           <button class="btn-roll-table" id="btn-roll-table" data-action="manual-roll" style="display:none">
@@ -210,7 +210,7 @@
           <div id="rel-label" class="rel-label">Neutro</div>
         </div>
         <div id="stats-section" class="sidebar-section" style="display:none">
-          <div class="section-title">Status — <span id="level-text">Nível 1</span></div>
+          <div class="section-title">Status &middot; <span id="level-text">Nível 1</span></div>
           <div class="bar-row">
             <span class="bar-label">HP</span>
             <div class="bar-track"><div id="hp-bar" class="hp-bar" style="width:100%"></div></div>
@@ -235,7 +235,7 @@
       <div id="rpg-panel-narrative">
         <div class="sidebar-section">
           <div class="section-title">Modo Narrativo</div>
-          <p class="narrative-hint">Pura história. Sem mecânicas.</p>
+          <p class="narrative-hint">Sem números por aqui.</p>
         </div>
       </div>
     </div>

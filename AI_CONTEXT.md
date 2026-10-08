@@ -142,20 +142,18 @@ GET  /api/tts/status                     POST /api/tts  (Piper, devolve WAV)
 
 ## Personagens Existentes
 
-| ID | Nome | Mundo | Descrição |
-|----|------|-------|-----------|
-| `harem-eldoria` | As Heroínas de Eldoria | eldoria | Personagem de grupo (`group: true`): isekai com harém, sete heroínas adultas de arquétipos de anime (tsundere, kuudere, genki, onee-san, yandere, dandere, ojou-sama) |
-| `vex` | Vex | neon-city | Netrunner e mercenária, clima Cyberpunk 2077/Edgerunners, romance trágico |
-| `morrigan` | Morrigan | abismo | Entidade do Abismo, dark fantasy e horror psicológico, pacto com Preço |
+| ID | Nome | Mundo | O que é |
+|----|------|-------|---------|
+| `mesa-javali` | Mesa do Javali Cego | quermes | Personagem de grupo (`group: true`): isekai com harém, sete mulheres adultas de jeitos bem diferentes |
+| `trama` | Trama (Nanda Quaresma) | taquara | Netrunner de uma cidade cyberpunk brasileira, clima Cyberpunk 2077/Edgerunners, romance trágico |
+| `sibila` | Sibila | hiato | Dona da Casa no Hiato, dark fantasy e horror psicológico, tudo tem Preço |
 
 Personagem de grupo: o narrador interpreta todo o elenco e marca quem fala com **Nome:** (ver `build_system_prompt`).
-Conteúdo sexual explícito não é escrito aqui: as fichas só definem desejo, ritmo e a instrução de narrar a intimidade;
+Conteúdo sexual explícito não é escrito aqui: as fichas definem desejo, ritmo e a instrução de narrar a intimidade;
 o texto explícito vem do modelo local.
 
-----|------|-------|-----------|
-| `lyra` | Lyra Ashveil | eldoria | Elfa maga renegada, sarcástica, ex-Ordem dos Sete Selos |
-| `morrigan` | Morrigan | abismo | Entidade do Abismo em forma humana, misteriosa |
-| `vex` | Vex-7 | neon-city | Hacker de elite cyberpunk com implantes |
+Estilo dos textos: nomes que soam como lugar e pessoa, não como tradução literal; detalhes concretos em vez de rótulos
+("tsundere", "kuudere"); sem frases de manual. Ao criar personagens novos, siga isso.
 
 ---
 

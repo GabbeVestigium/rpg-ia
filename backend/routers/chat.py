@@ -57,7 +57,7 @@ def _auto_roll(rpg, text: str) -> Optional[dict]:
     modifier = get_roll_modifier(rpg.player, attr)
     result = roll_d20(modifier)
     event = (
-        f"[ROLAGEM AUTOMÁTICA — {attr}: d20={result['natural']} + {modifier} = "
+        f"[ROLAGEM AUTOMÁTICA: {attr}: d20={result['natural']} + {modifier} = "
         f"{result['final']} | {result['label']}]"
     )
 

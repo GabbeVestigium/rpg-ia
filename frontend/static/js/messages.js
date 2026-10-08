@@ -56,7 +56,7 @@ export function appendSceneImage(image) {
 export function appendLevelUp(level) {
   const div = document.createElement('div');
   div.className = 'levelup-card';
-  div.innerHTML = `<div class="levelup-title">⬆️ LEVEL UP!</div><div class="levelup-sub">Você alcançou o Nível ${Number(level)}!</div>`;
+  div.innerHTML = `<div class="levelup-title">Subiu de nível</div><div class="levelup-sub">Agora você é nível ${Number(level)}.</div>`;
   $('messages').appendChild(div);
   scrollToBottom();
 }

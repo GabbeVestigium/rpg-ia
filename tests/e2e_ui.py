@@ -49,15 +49,15 @@ try:
         page.screenshot(path=f"{SHOTS}/1-select.png")
 
         # Narrativo
-        page.click(".char-card:has-text(\"Vex\")")
+        page.click(".char-card:has-text(\"Trama\")")
         page.wait_for_selector("#modal-mode", state="visible")
         page.screenshot(path=f"{SHOTS}/2-mode.png")
         page.click('[data-mode="narrative"]')
         page.wait_for_selector("#screen-chat.active")
-        check("Vex" in page.inner_text("#topbar-char-name"), "chat abriu com a Vex")
+        check("Trama" in page.inner_text("#topbar-char-name"), "chat abriu com a Trama")
         check(page.locator(".message.assistant .bubble").count() >= 1, "mensagem de abertura renderizada")
 
-        page.fill("#user-input", "Olá Lyra")
+        page.fill("#user-input", "Olá Zélia")
         page.keyboard.press("Enter")
         page.wait_for_selector(".message.assistant[data-index='2'] .bubble:not(.typing-cursor)")
         txt = page.inner_text(".message.assistant[data-index='2'] .bubble")
@@ -84,7 +84,7 @@ try:
         page.hover(".message[data-index='2']")
         page.click(".message[data-index='2'] [data-action=undo]")
         page.wait_for_function("document.querySelectorAll('.message').length === 1")
-        check(page.input_value("#user-input") == "Olá Lyra", "desfazer devolve o texto à caixa")
+        check(page.input_value("#user-input") == "Olá Zélia", "desfazer devolve o texto à caixa")
 
         # Cena
         page.fill("#user-input", "Vamos sentar")
@@ -98,7 +98,7 @@ try:
         # Memória
         page.click("[data-action=open-memory]")
         page.wait_for_selector("#modal-memory", state="visible")
-        page.fill("#memory-text", "Lyra confia no jogador.")
+        page.fill("#memory-text", "Zélia confia no jogador.")
         page.click("[data-action=save-memory]")
         page.wait_for_selector("#modal-memory", state="hidden")
 
@@ -139,7 +139,7 @@ try:
         page.screenshot(path=f"{SHOTS}/6-gallery.png")
 
         # Modo completo
-        page.click(".char-card:has-text(\"Vex\")")
+        page.click(".char-card:has-text(\"Trama\")")
         page.click('[data-mode="full"]')
         page.wait_for_selector("#screen-create.active")
         page.fill("#input-player-name", "Kael")
