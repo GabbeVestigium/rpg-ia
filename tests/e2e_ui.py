@@ -17,7 +17,7 @@ tmp = tempfile.mkdtemp(prefix="rpgia-e2e-")
 data = os.path.join(tmp, "data")
 shutil.copytree(os.path.join(ROOT, "data"), data, ignore=shutil.ignore_patterns("sessions"))
 env = dict(os.environ, RPG_DATA_DIR=data, OLLAMA_BASE_URL="http://127.0.0.1:18434",
-           SD_API_URL="http://127.0.0.1:18860", PYTHONPATH=ROOT + ":" + os.path.join(ROOT, "tests"))
+           SD_API_URL="http://127.0.0.1:18860", RPG_PORTRAITS_DIR=os.path.join(tmp, "portraits"), PYTHONPATH=ROOT + ":" + os.path.join(ROOT, "tests"))
 
 fake = subprocess.Popen([sys.executable, "-c", (
     "import fake_services as f, time;"

@@ -14,6 +14,7 @@ _TMP = tempfile.mkdtemp(prefix="rpgia-test-")
 os.environ["RPG_DATA_DIR"] = os.path.join(_TMP, "data")
 os.environ["OLLAMA_BASE_URL"] = "http://127.0.0.1:18434"
 os.environ["SD_API_URL"] = "http://127.0.0.1:18860"
+os.environ["RPG_PORTRAITS_DIR"] = os.path.join(_TMP, "portraits")
 shutil.copytree(os.path.join(ROOT, "data"), os.environ["RPG_DATA_DIR"], ignore=shutil.ignore_patterns("sessions"))
 
 import fake_services  # noqa: E402
