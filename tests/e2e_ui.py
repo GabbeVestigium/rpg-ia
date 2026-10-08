@@ -51,6 +51,7 @@ try:
         page.goto("http://127.0.0.1:18000")
         page.wait_for_selector(".char-card")
         check(page.locator(".char-card").count() == 3, "3 personagens listados")
+        page.wait_for_function("document.getElementById('status-text').textContent.includes('fake-rp:8b')", timeout=5000)
         check("fake-rp:8b" in page.inner_text("#status-text"), "status mostra modelo ativo")
         page.screenshot(path=f"{SHOTS}/1-select.png")
 
