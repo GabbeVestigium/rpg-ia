@@ -162,6 +162,25 @@ try:
         check("Olá, viajante" in page.inner_text(".message.assistant[data-index='2'] .bubble"),
               "resposta chega depois da animação do dado")
 
+        # Personagem de grupo no modo médio: uma barra por integrante do elenco
+        page.click("[data-action=go-back]")
+        page.click(".char-card:has-text(\"Javali\")")
+        page.click('[data-mode="medium"]')
+        page.wait_for_selector("#screen-create.active")
+        page.fill("#input-player-name", "Tonico")
+        page.click("#race-grid .option-btn >> nth=0")
+        page.click("#class-grid .option-btn >> nth=0")
+        page.click("#btn-confirm-create")
+        page.wait_for_selector("#cast-list .cast-row")
+        check(page.locator("#cast-list .cast-row").count() == 7, "sidebar mostra 7 barras do elenco")
+        check(not page.is_visible("#rel-section"), "medidor único some no personagem de grupo")
+        page.fill("#user-input", "Obrigado, Zélia, eu confio em você")
+        page.keyboard.press("Enter")
+        page.wait_for_selector(".message.assistant[data-index='2'] .bubble:not(.typing-cursor)")
+        page.wait_for_selector("#cast-list .cast-row.up")
+        check("Zélia" in page.inner_text("#cast-list .cast-row.up"), "barra da Zélia subiu depois do elogio")
+        page.screenshot(path=f"{SHOTS}/8-cast.png")
+
         browser.close()
 finally:
     server.terminate()

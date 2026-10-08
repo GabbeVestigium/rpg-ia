@@ -231,6 +231,7 @@ export async function confirmCreatePlayer() {
     state.character = { ...state.character, ...sess.character };
     state.history = [{ role: 'assistant', content: sess.character.first_message }];
     state.images = [];
+    state.cast = sess.cast || [];
     openChatScreen(playerData.player);
   } catch (e) {
     toast(e.message, 'error', 7000);
@@ -249,6 +250,7 @@ export async function startNewChat(characterId, mode) {
     state.character = { ...state.character, ...data.character };
     state.history = [{ role: 'assistant', content: data.character.first_message }];
     state.images = [];
+    state.cast = data.cast || [];
     openChatScreen(null);
   } catch (e) {
     toast(e.message, 'error');
@@ -266,6 +268,7 @@ export async function continueSession(sessionId) {
     };
     state.history = data.history;
     state.images = data.images || [];
+    state.cast = data.cast || [];
     openChatScreen(data.rpg_state?.player || null);
   } catch (e) {
     toast(e.message, 'error');
@@ -295,7 +298,7 @@ function openChatScreen(player) {
 
   loadPortrait(c.id);
   setupDiceTable(state.mode);
-  setupSidebar(state.mode, player);
+  setupSidebar(state.mode, player, state.cast);
   renderChat();
   $('user-input').focus();
 }

@@ -4,7 +4,26 @@ import { $, capitalize, escapeHtml } from './util.js';
 
 export const ATTR_LABELS = { STR: 'FOR', DEX: 'DES', CON: 'CON', INT: 'INT', WIS: 'SAB', CHA: 'CAR' };
 
-export function setupSidebar(mode, player) {
+/** Elenco de um personagem de grupo: uma barra por pessoa; destaca quem subiu ou desceu. */
+export function updateCast(cast, previous = []) {
+  const hasCast = cast.length > 0;
+  $('cast-section').style.display = hasCast ? 'block' : 'none';
+  $('rel-section').style.display = hasCast ? 'none' : 'block';
+  if (!hasCast) return;
+  const before = new Map(previous.map((c) => [c.id, c.score]));
+  $('cast-list').innerHTML = cast.map((c) => {
+    const old = before.get(c.id);
+    const trend = old === undefined || old === c.score ? '' : (c.score > old ? 'up' : 'down');
+    const arrow = trend === 'up' ? '▲' : trend === 'down' ? '▼' : '';
+    return `<div class="cast-row ${trend}">
+      <div class="cast-head"><span class="cast-name">${escapeHtml(c.name)}</span>
+        <span class="cast-label" style="color:${escapeHtml(c.color)}">${arrow} ${escapeHtml(c.label)}</span></div>
+      <div class="rel-track"><div class="rel-bar" style="width:${Number(c.score)}%;background:${escapeHtml(c.color)}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+export function setupSidebar(mode, player, cast = []) {
   const full = $('rpg-panel-full');
   const narr = $('rpg-panel-narrative');
   if (mode === 'narrative') {
@@ -16,6 +35,7 @@ export function setupSidebar(mode, player) {
   narr.style.display = 'none';
   $('stats-section').style.display = mode === 'full' ? 'block' : 'none';
   $('quests-section').style.display = mode === 'full' ? 'block' : 'none';
+  updateCast(cast);
   if (player) updateSidebar(player, mode);
 }
 

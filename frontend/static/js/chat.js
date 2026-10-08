@@ -7,7 +7,7 @@ import {
   appendLevelUp, appendMessage, characterLabel, refreshActions, removeTypingIndicator,
   renderChat, scrollToBottom, showTypingIndicator, startEdit,
 } from './messages.js';
-import { currentLevel, updateSidebar } from './sidebar.js';
+import { currentLevel, updateCast, updateSidebar } from './sidebar.js';
 import { speak, stopSpeaking } from './tts.js';
 
 function setStreaming(on) {
@@ -29,6 +29,10 @@ async function resync() {
       state.history = data.history;
       state.images = data.images || [];
       renderChat();
+    }
+    if (state.mode !== 'narrative' && data.cast?.length) {
+      updateCast(data.cast, state.cast);
+      state.cast = data.cast;
     }
     if (state.mode !== 'narrative' && data.rpg_state?.player) {
       const prev = currentLevel();

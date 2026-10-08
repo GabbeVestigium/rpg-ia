@@ -16,7 +16,7 @@ import httpx
 
 from backend.config import OLLAMA_BASE_URL
 from backend.models import Message
-from backend.rpg_engine import build_rpg_context
+from backend.rpg_engine import build_cast_context, build_rpg_context
 from backend.rpg_models import GameMode, RPGState
 from backend.settings_manager import get_settings
 
@@ -49,7 +49,10 @@ def build_system_prompt(
 
     rpg_context = ""
     if rpg_state and rpg_state.mode != GameMode.NARRATIVE:
-        rpg_context = build_rpg_context(rpg_state)
+        group_cast = getattr(character, "group", False) and character.cast and rpg_state.cast_relations
+        rpg_context = build_rpg_context(rpg_state, include_relationship=not group_cast)
+        if group_cast:
+            rpg_context += build_cast_context(character.cast, rpg_state.cast_relations)
 
     mode_instructions = ""
     if rpg_state:

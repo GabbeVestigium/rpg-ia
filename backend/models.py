@@ -19,6 +19,14 @@ class Message(BaseModel):
     content: str
 
 
+class CastMember(BaseModel):
+    """Integrante do elenco de um personagem de grupo, com relação própria com o jogador."""
+    id: str                        # identificador estável (chave do medidor)
+    name: str                      # primeiro nome, como aparece nas falas ("Zélia")
+    aliases: List[str] = []        # como o jogador pode chamá-la ("maga", "irmã")
+    start: int = 50                # relação inicial, 0 a 100
+
+
 class Character(BaseModel):
     id: str
     name: str
@@ -33,6 +41,7 @@ class Character(BaseModel):
     example_dialogue: str = ""     # Trechos de fala de exemplo (calibra o estilo)
     appearance_tags: str = ""      # Tags em inglês para o SD ("silver hair, violet eyes")
     group: bool = False            # True: o narrador interpreta um elenco (ex: harém)
+    cast: List[CastMember] = []    # Elenco de um personagem de grupo (medidor de relação por pessoa)
     avatar_emoji: str = "👤"       # Emoji de avatar
     tags: List[str] = []
 

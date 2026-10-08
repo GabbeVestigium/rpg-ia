@@ -149,6 +149,9 @@ GET  /api/tts/status                     POST /api/tts  (Piper, devolve WAV)
 | `sibila` | Sibila | hiato | Dona da Casa no Hiato, dark fantasy e horror psicológico, tudo tem Preço |
 
 Personagem de grupo: o narrador interpreta todo o elenco e marca quem fala com **Nome:** (ver `build_system_prompt`).
+Cada integrante fica em `cast` (id, nome, apelidos, relação inicial) e tem a própria relação com o jogador nos modos
+médio e completo (`RPGState.cast_relations`). A mensagem do jogador mexe na relação de quem foi citada pelo nome ou apelido,
+ou, se ninguém foi citada, de quem falou por último. Isso vai para o prompt e para a barra "Elenco" da lateral.
 Conteúdo sexual explícito não é escrito aqui: as fichas definem desejo, ritmo e a instrução de narrar a intimidade;
 o texto explícito vem do modelo local.
 

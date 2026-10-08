@@ -8,9 +8,9 @@ from pydantic import BaseModel
 
 from backend.character_manager import load_character
 from backend.models import MessageRole
-from backend.rpg_engine import create_player, get_roll_modifier, roll_d20
+from backend.rpg_engine import cast_summary, create_player, get_roll_modifier, roll_d20
 from backend.rpg_models import (
-    CLASSES, RACES, AddQuestRequest, CreatePlayerRequest, GameMode, Quest, QuestStatus,
+    CLASSES, RACES, AddQuestRequest, CreatePlayerRequest, GameMode, Quest, QuestStatus, Relationship,
 )
 from backend.session_manager import (
     add_message, create_session, delete_session, get_rpg_state, list_sessions,
@@ -72,8 +72,13 @@ async def new_session(req: NewSessionRequestV2):
         mode = GameMode.NARRATIVE
 
     session = create_session(req.character_id, mode)
+    rpg = get_rpg_state(session)
+    if character.group and character.cast and mode != GameMode.NARRATIVE:
+        rpg.cast_relations = {m.id: Relationship(score=max(0, min(100, m.start))) for m in character.cast}
+        save_rpg_state(session, rpg)
     add_message(session, MessageRole.ASSISTANT, character.first_message)
     return {
+        "cast": cast_summary(character.cast, rpg.cast_relations),
         "session_id": session.session_id,
         "game_mode": mode.value,
         "character": {
@@ -111,6 +116,7 @@ async def get_session(session_id: str):
         "history": [{"role": m.role.value, "content": m.content} for m in session.history],
         "images": [i.model_dump() for i in session.images],
         "has_summary": bool(session.summary),
+        "cast": cast_summary(character.cast if character else [], rpg.cast_relations),
         "rpg_state": rpg.model_dump(mode="json") if rpg.player else None,
     }
 

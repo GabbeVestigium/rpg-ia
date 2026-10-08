@@ -6,6 +6,7 @@ export const state = {
   mode: 'narrative',
   history: [],          // [{ role, content }] espelho do servidor
   images: [],           // [{ url, at }] cenas geradas
+  cast: [],             // [{ id, name, score, label, color }] relação com cada integrante (personagem de grupo)
   streaming: false,
   abort: null,          // AbortController da resposta em andamento
   rpgOptions: { races: [], classes: [], modes: [] },

@@ -75,3 +75,17 @@ def test_window_respects_token_budget_and_keeps_last_exchange():
     assert window_start(s, budget=1) == 20 - 2            # nunca menos que a última troca
     update_settings({"history_turns": 4})
     assert window_start(s, budget=10**6) == 20 - 8        # limite por turnos
+
+
+def test_cast_matching_by_name_alias_and_last_speaker():
+    from backend.models import CastMember
+    from backend.rpg_engine import cast_targets, last_speaker, match_cast
+    cast = [CastMember(id="zelia", name="Zélia", aliases=["maga"]),
+            CastMember(id="tui", name="Tuí"), CastMember(id="benedita", name="Benedita", aliases=["irmã"])]
+    assert match_cast("obrigado, zelia!", cast) == ["zelia"]            # sem acento também casa
+    assert match_cast("Tuí e a irmã vêm comigo", cast) == ["tui", "benedita"]
+    assert match_cast("vamos embora", cast) == []
+    reply = "**Zélia:** hmpf.\n**Tuí:** *ri alto* oi!\n**Benedita:** querido..."
+    assert last_speaker(reply, cast) == "benedita"
+    assert cast_targets("obrigado", reply, cast) == ["benedita"]        # sem nome: quem falou por último
+    assert cast_targets("Tuí, vem", reply, cast) == ["tui"]             # com nome: só a citada

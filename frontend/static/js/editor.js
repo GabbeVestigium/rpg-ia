@@ -7,6 +7,7 @@ import { $, closeModal, openModal, toast } from './util.js';
 import { loadCharacters } from './screens.js';
 
 let editingId = null;
+let original = {};   // campos que o formulário não mostra (ex: elenco) são preservados ao salvar
 let currentFields = [];
 
 const BLANK = {
@@ -51,6 +52,7 @@ async function open(values, title, canDelete) {
 
 export async function newCharacter() {
   editingId = null;
+  original = {};
   await open(BLANK, 'Novo personagem', false);
 }
 
@@ -58,6 +60,7 @@ export async function editCharacter(id) {
   try {
     const c = await api(`/api/characters/${id}`);
     editingId = id;
+    original = c;
     await open({ ...c, tags: (c.tags || []).join(', ') }, `Editar ${c.name}`, true);
   } catch (e) {
     toast(e.message, 'error');
@@ -65,7 +68,7 @@ export async function editCharacter(id) {
 }
 
 export async function saveCharacter() {
-  const v = readForm($('editor-form'), currentFields);
+  const v = { ...original, ...readForm($('editor-form'), currentFields) };
   v.tags = v.tags.split(',').map((t) => t.trim()).filter(Boolean);
   v.id = editingId || 'novo';
   const err = $('editor-error');

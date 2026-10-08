@@ -207,3 +207,38 @@ def test_shipped_characters_are_valid_adults(client):
     chars = client.get("/api/characters").json()
     assert {c["id"] for c in chars} >= {"mesa-javali", "trama", "sibila"}
     assert all(c["age"] >= 18 for c in chars)
+
+
+def _scores(client, sid):
+    return {c["id"]: c["score"] for c in client.get(f"/api/session/{sid}").json()["cast"]}
+
+
+def test_group_has_one_relationship_per_cast_member(client, services):
+    sid = client.post("/api/session/new", json={"character_id": "mesa-javali", "game_mode": "medium"}).json()["session_id"]
+    client.post("/api/player/create", json={"session_id": sid, "name": "Tonico", "race": "humano",
+                                            "char_class": "bardo", "mode": "medium", "age": 25})
+    before = _scores(client, sid)
+    assert before["zelia"] == 35 and before["nini"] == 70 and len(before) == 7  # cada uma com a sua largada
+
+    client.post("/api/chat", json={"session_id": sid, "character_id": "mesa-javali",
+                                   "message": "Obrigado, Zélia, eu confio em você"})
+    after = _scores(client, sid)
+    assert after["zelia"] > before["zelia"]                                   # a citada subiu
+    assert all(after[k] == before[k] for k in before if k != "zelia")        # as outras não mexeram
+
+    # o prompt do modelo traz o sentimento de cada uma
+    system = services["chat_calls"][-1]["messages"][0]["content"]
+    assert "Como cada uma se sente" in system and "Zélia:" in system and "Nini:" in system
+    assert "Relacionamento com você" not in system
+
+
+def test_group_narrative_mode_has_no_cast_tracking(client):
+    sid = new_session(client, char="mesa-javali", mode="narrative")
+    assert client.get(f"/api/session/{sid}").json()["cast"] == []
+
+
+def test_editing_group_character_keeps_its_cast(client):
+    c = client.get("/api/characters/mesa-javali").json()
+    c["summary"] = "novo resumo"
+    assert client.put("/api/characters/mesa-javali", json=c).status_code == 200
+    assert len(client.get("/api/characters/mesa-javali").json()["cast"]) == 7

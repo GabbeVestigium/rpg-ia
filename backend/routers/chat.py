@@ -19,7 +19,7 @@ from backend.memory import history_budget, prompt_window, update_summary, window
 from backend.models import ChatRequest, EditMessageRequest, MessageRole, RegenerateRequest
 from backend.ollama_client import OllamaError, build_system_prompt, stream_chat
 from backend.rpg_engine import (
-    auto_relationship_delta, calculate_xp_reward, detect_risk_action,
+    auto_relationship_delta, calculate_xp_reward, cast_delta, cast_targets, detect_risk_action,
     get_roll_modifier, roll_d20,
 )
 from backend.rpg_models import GameMode
@@ -102,9 +102,19 @@ async def _reply(session_id: str, character_id: str, user_text: Optional[str]) -
             stored = f"{user_text}\n\n{roll['event']}" if roll else user_text
 
             if rpg.player and rpg.mode != GameMode.NARRATIVE:
-                delta = auto_relationship_delta(user_text)
-                if delta:
-                    rpg.player.relationship.set_score(rpg.player.relationship.score + delta)
+                if character.group and character.cast and rpg.cast_relations:
+                    # Cada integrante tem a sua relação: vale para quem foi citada, ou para quem acabou de falar.
+                    previous = next((m.content for m in reversed(session.history)
+                                     if m.role == MessageRole.ASSISTANT), "")
+                    delta = cast_delta(user_text)
+                    for cid in cast_targets(user_text, previous, character.cast):
+                        rel = rpg.cast_relations.get(cid)
+                        if rel:
+                            rel.set_score(rel.score + delta)
+                else:
+                    delta = auto_relationship_delta(user_text)
+                    if delta:
+                        rpg.player.relationship.set_score(rpg.player.relationship.score + delta)
             rpg.event_log = rpg.event_log[-50:]
             session.rpg_state = rpg
             add_message(session, MessageRole.USER, stored)

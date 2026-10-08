@@ -237,6 +237,8 @@ class PlayerStats(BaseModel):
 class RPGState(BaseModel):
     mode: GameMode = GameMode.NARRATIVE
     player: Optional[PlayerStats] = None
+    # Relação do jogador com cada integrante do elenco (só personagens de grupo)
+    cast_relations: Dict[str, Relationship] = {}
     # Log de eventos importantes (rolagens, level ups, etc.)
     event_log: List[str] = []
 
