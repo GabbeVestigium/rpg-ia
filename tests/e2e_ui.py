@@ -24,7 +24,13 @@ fake = subprocess.Popen([sys.executable, "-c", (
     "f.serve(f.make_ollama(), 18434); f.serve(f.make_sd(), 18860); time.sleep(600)")], env=env)
 server = subprocess.Popen([sys.executable, "-m", "uvicorn", "backend.main:app", "--port", "18000", "--log-level", "warning"],
                           cwd=ROOT, env=env)
-time.sleep(3)
+import urllib.request
+for _ in range(100):  # espera o servidor responder (em vez de um tempo fixo)
+    try:
+        urllib.request.urlopen("http://127.0.0.1:18000/api/status", timeout=1)
+        break
+    except Exception:
+        time.sleep(0.2)
 
 errors, failures = [], []
 
