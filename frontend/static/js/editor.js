@@ -2,7 +2,6 @@
 
 import { api } from './api.js';
 import { buildForm, readForm } from './forms.js';
-import { state } from './state.js';
 import { $, closeModal, openModal, toast } from './util.js';
 import { loadCharacters } from './screens.js';
 

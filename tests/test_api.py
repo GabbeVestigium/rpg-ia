@@ -242,3 +242,9 @@ def test_editing_group_character_keeps_its_cast(client):
     c["summary"] = "novo resumo"
     assert client.put("/api/characters/mesa-javali", json=c).status_code == 200
     assert len(client.get("/api/characters/mesa-javali").json()["cast"]) == 7
+
+
+def test_static_files_are_revalidated(client):
+    r = client.get("/static/js/main.js")
+    assert r.status_code == 200 and r.headers["cache-control"] == "no-cache"
+    assert "javascript" in r.headers["content-type"]

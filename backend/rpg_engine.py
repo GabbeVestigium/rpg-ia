@@ -15,7 +15,7 @@ import re
 from typing import Optional, Tuple
 from backend.rpg_models import (
     PlayerStats, Attributes, RPGState, GameMode,
-    RACES, CLASSES, Item, Quest, QuestStatus
+    RACES, CLASSES, Item, QuestStatus
 )
 
 
@@ -345,7 +345,7 @@ def auto_relationship_delta(message: str) -> int:
 # ─── ELENCO (personagens de grupo) ────────────────────────────────────────────
 
 def _fold(text: str) -> str:
-    """Minúsculas e sem acento, para casar 'Zélia' com 'zelia'."""
+    """Minúsculas e sem acento, para casar 'Yasmin' com 'yasmin'."""
     import unicodedata
     return unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode().lower()
 

@@ -89,3 +89,8 @@ def test_cast_matching_by_name_alias_and_last_speaker():
     assert last_speaker(reply, cast) == "benedita"
     assert cast_targets("obrigado", reply, cast) == ["benedita"]        # sem nome: quem falou por último
     assert cast_targets("Tuí, vem", reply, cast) == ["tui"]             # com nome: só a citada
+
+
+def test_slugify_avoids_windows_reserved_names():
+    assert slugify("Con") == "con-1" and slugify("NUL") == "nul-1" and slugify("Com3") == "com3-1"
+    assert slugify("Conan") == "conan"

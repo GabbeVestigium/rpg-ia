@@ -22,7 +22,7 @@ class Message(BaseModel):
 class CastMember(BaseModel):
     """Integrante do elenco de um personagem de grupo, com relação própria com o jogador."""
     id: str                        # identificador estável (chave do medidor)
-    name: str                      # primeiro nome, como aparece nas falas ("Zélia")
+    name: str                      # primeiro nome, como aparece nas falas ("Yasmin")
     aliases: List[str] = []        # como o jogador pode chamá-la ("maga", "irmã")
     start: int = 50                # relação inicial, 0 a 100
 

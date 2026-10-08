@@ -1,6 +1,5 @@
 """Ollama e Stable Diffusion falsos, para testar sem GPU nem modelos."""
 
-import base64
 import json
 import threading
 import time
@@ -42,7 +41,7 @@ def make_ollama() -> FastAPI:
         is_summary = "memória de uma história" in system
         is_tags = "Danbooru" in system
         if is_summary:
-            text = "Resumo falso: Zélia e o jogador se conheceram na taverna."
+            text = "Resumo falso: Yasmin e o jogador se conheceram na taverna."
         elif is_tags:
             text = "tavern, night, candlelight, sitting, smile, upper body, 1girl, ELF-ears"
         else:

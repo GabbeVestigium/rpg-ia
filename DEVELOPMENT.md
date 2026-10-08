@@ -1,3 +1,7 @@
+> **Nota:** este arquivo é o histórico das primeiras versões (v1 e v2). A arquitetura atual (v3: routers,
+> módulos ES, memória, cenas, voz, personagens de grupo) está descrita em `AI_CONTEXT.md` e no `README.md`.
+> Nomes de arquivos e rotas abaixo (como `frontend/static/js/app.js`) podem não existir mais.
+
 # Histórico de Desenvolvimento — RPG-IA
 
 ## Visão Geral

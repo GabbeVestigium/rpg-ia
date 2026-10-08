@@ -21,13 +21,22 @@ from fastapi.staticfiles import StaticFiles
 from backend.config import FRONTEND_DIR, HOST, PORT, PORTRAITS_DIR, SCENES_DIR
 from backend.routers import characters, chat, images, sessions, system
 
+class NoCacheStatic(StaticFiles):
+    """Arquivos do frontend sempre revalidados: depois de um git pull, o navegador não serve JS antigo."""
+
+    async def get_response(self, path, scope):
+        response = await super().get_response(path, scope)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
 app = FastAPI(title="RPG IA", version="3.0.0")
 
 # O servidor só escuta em 127.0.0.1, então não há CORS aberto: o frontend é servido por aqui mesmo.
 os.makedirs(PORTRAITS_DIR, exist_ok=True)
 os.makedirs(SCENES_DIR, exist_ok=True)
 
-app.mount("/static", StaticFiles(directory=os.path.join(FRONTEND_DIR, "static")), name="static")
+app.mount("/static", NoCacheStatic(directory=os.path.join(FRONTEND_DIR, "static")), name="static")
 app.mount("/scenes", StaticFiles(directory=SCENES_DIR), name="scenes")
 
 for module in (system, characters, sessions, chat, images):

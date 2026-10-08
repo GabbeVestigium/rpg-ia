@@ -13,6 +13,8 @@ from typing import Any, Optional
 
 from fastapi import HTTPException
 
+_WINDOWS_RESERVED = {"con", "prn", "aux", "nul",
+                     *(f"com{i}" for i in range(1, 10)), *(f"lpt{i}" for i in range(1, 10))}
 _ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 
 
@@ -28,11 +30,13 @@ def safe_id(value: str, what: str = "id") -> str:
 
 
 def slugify(text: str) -> str:
-    """Transforma um nome em id de arquivo (ex: 'Lyra Ashveil' -> 'lyra-ashveil')."""
+    """Transforma um nome em id de arquivo (ex: 'Nanda Quaresma' -> 'nanda-quaresma')."""
     import unicodedata
     norm = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
-    slug = re.sub(r"[^a-zA-Z0-9]+", "-", norm).strip("-").lower()
-    return slug[:48] or "personagem"
+    slug = re.sub(r"[^a-zA-Z0-9]+", "-", norm).strip("-").lower()[:48] or "personagem"
+    if slug in _WINDOWS_RESERVED:  # "con.json" e afins não podem ser criados no Windows
+        slug += "-1"
+    return slug
 
 
 def read_json(path: str) -> Optional[Any]:

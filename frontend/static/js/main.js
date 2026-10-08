@@ -1,6 +1,5 @@
 // Ponto de entrada: liga os eventos da página (delegação por data-action) e inicia o app.
 
-import { api } from './api.js';
 import * as chat from './chat.js';
 import { deleteCharacter, editCharacter, newCharacter, saveCharacter } from './editor.js';
 import { initLayout } from './layout.js';

@@ -2,7 +2,7 @@
 
 import { api } from './api.js';
 import { state } from './state.js';
-import { $, capitalize, closeModal, escapeHtml, openModal, showScreen, toast } from './util.js';
+import { $, closeModal, escapeHtml, openModal, showScreen, toast } from './util.js';
 import { renderChat } from './messages.js';
 import { ATTR_LABELS, setupDiceTable, setupSidebar } from './sidebar.js';
 import { loadPortrait } from './portrait.js';
