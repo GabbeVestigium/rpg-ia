@@ -47,6 +47,7 @@
         <div class="modal-subtitle">Como você quer jogar?</div>
       </div>
     </div>
+    <div id="prompt-warning" class="form-error" style="display:none"></div>
     <div class="mode-cards">
       <div class="mode-card" data-action="select-mode" data-mode="narrative">
         <div class="mode-icon">📖</div>
@@ -176,6 +177,7 @@
           <span id="topbar-session" class="topbar-session"></span>
         </div>
         <button class="btn-secondary-sm" data-action="generate-scene" id="btn-scene" title="Gerar imagem da cena atual">🖼️ Cena</button>
+        <button class="btn-secondary-sm" data-action="open-lore" title="Fatos do mundo que entram quando você os cita">📚 Fatos</button>
         <button class="btn-secondary-sm" data-action="open-memory" title="Ver e editar a memória da história">🧠 Memória</button>
         <button class="btn-secondary-sm" data-action="toggle-autoplay" id="btn-autoplay" title="Ler as respostas em voz alta">🔇 Voz</button>
         <button class="btn-secondary-sm" data-action="open-settings" title="Configurações">⚙️</button>
@@ -244,6 +246,21 @@
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- MODAL: LIVRO DE FATOS -->
+<div id="modal-lore" class="modal-overlay" style="display:none">
+  <div class="modal modal-wide">
+    <h3 class="modal-title">📚 Livro de fatos</h3>
+    <p class="modal-help">Detalhes do mundo que só entram na conversa quando uma palavra-chave aparece nas últimas mensagens. Mantém o mundo consistente sem gastar contexto à toa. Use palavras curtas separadas por vírgula; "Sempre" faz a entrada ir em toda resposta.</p>
+    <div id="lore-meta" class="modal-help"></div>
+    <div id="lore-list" class="lore-list"></div>
+    <button class="btn-secondary-sm" data-action="add-lore">➕ Nova entrada</button>
+    <div class="modal-actions">
+      <button class="btn-cancel" data-action="close-lore">Fechar</button>
+      <button class="btn-primary" data-action="save-lore">Salvar</button>
+    </div>
   </div>
 </div>
 

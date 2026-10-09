@@ -304,3 +304,43 @@ def test_new_message_edit_and_undo_handle_swipes(client, services):
     client.post("/api/chat/regenerate", json={"session_id": sid, "character_id": "trama"})
     client.post("/api/chat/undo", json={"session_id": sid, "character_id": "trama"})
     assert _swipe(client, sid)["count"] == 0
+
+
+def _system_of_last_chat(services):
+    return services["chat_calls"][-1]["messages"][0]["content"]
+
+
+def test_lore_entry_enters_prompt_only_when_cited(client, services):
+    sid = new_session(client, char="mesa-javali")
+    client.post("/api/chat", json={"session_id": sid, "character_id": "mesa-javali", "message": "Bora para a Cova de Tarsa"})
+    system = _system_of_last_chat(services)
+    assert "Fatos que importam agora" in system and "Cova de Tarsa:" in system
+    assert "Banhos do Frei Jorge:" not in system                    # não citado, não entra
+    client.post("/api/chat", json={"session_id": sid, "character_id": "mesa-javali", "message": "Que tal um banho quente?"})
+    system = _system_of_last_chat(services)
+    assert "Banhos do Frei Jorge:" in system
+
+
+def test_lorebook_can_be_edited_and_is_validated(client, services):
+    world = client.get("/api/worlds/taquara").json()
+    assert len(world["entries"]) >= 10
+    world["entries"].append({"name": "Gato do bar", "keys": ["gato"], "text": "Um gato cinza que dorme no balcão."})
+    assert client.put("/api/worlds/taquara", json=world).status_code == 200
+    saved = client.get("/api/worlds/taquara").json()["entries"][-1]
+    assert saved["name"] == "Gato do bar" and saved["id"]           # ganhou um id
+
+    sid = new_session(client, char="trama")
+    client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": "O gato do bar sumiu"})
+    assert "Gato do bar:" in _system_of_last_chat(services)
+
+    world["entries"].append({"name": "Ruim", "keys": ["x"], "text": "uma personagem de 15 anos"})
+    r = client.put("/api/worlds/taquara", json=world)
+    assert r.status_code == 422 and "18" in r.json()["detail"]      # a regra 18+ vale no livro também
+
+
+def test_prompt_size_endpoint_reports_remaining_budget(client):
+    p = client.get("/api/characters/mesa-javali/prompt-size").json()
+    assert p["num_ctx"] == 4096 and 500 < p["tokens"] < 3500 and p["history_left"] < 2000
+    light = client.get("/api/characters/trama/prompt-size").json()
+    assert light["history_left"] > p["history_left"]               # a Mesa é mais pesada que a Trama
+    assert client.get("/api/characters/nao-existe/prompt-size").status_code == 404

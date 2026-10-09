@@ -99,7 +99,22 @@ export function openModeModal(charId) {
   state.character = { id: c.id, name: c.name, avatar_emoji: c.avatar_emoji, world_id: c.world_id };
   $('modal-char-avatar').textContent = c.avatar_emoji;
   $('modal-char-name').textContent = c.name;
+  $('prompt-warning').style.display = 'none';
   openModal('modal-mode');
+  warnIfHeavy(c.id);
+}
+
+/** Avisa quando a ficha fixa do personagem deixa pouco contexto para a conversa. */
+async function warnIfHeavy(id) {
+  try {
+    const p = await api(`/api/characters/${id}/prompt-size`);
+    if (p.history_left < 1200) {
+      const box = $('prompt-warning');
+      box.textContent = `Este personagem ocupa cerca de ${p.tokens} dos ${p.num_ctx} tokens de contexto, e sobra pouco para a conversa. `
+        + 'Em ⚙️ Configurações, aumentar o contexto (6144 costuma caber numa placa de 6 GB) deixa a memória mais longa.';
+      box.style.display = 'block';
+    }
+  } catch { /* o aviso é opcional */ }
 }
 
 export async function selectMode(mode) {

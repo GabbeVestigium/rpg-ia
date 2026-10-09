@@ -181,6 +181,8 @@ try:
         # Personagem de grupo no modo médio: uma barra por integrante do elenco
         page.click("[data-action=go-back]")
         page.click(".char-card:has-text(\"Javali\")")
+        page.wait_for_selector("#prompt-warning", state="visible")
+        check("tokens de contexto" in page.inner_text("#prompt-warning"), "aviso de personagem pesado aparece")
         page.click('[data-mode="medium"]')
         page.wait_for_selector("#screen-create.active")
         page.fill("#input-player-name", "Tonico")
@@ -196,6 +198,21 @@ try:
         page.wait_for_selector("#cast-list .cast-row.up")
         check("Yasmin" in page.inner_text("#cast-list .cast-row.up"), "barra da Yasmin subiu depois do elogio")
         page.screenshot(path=f"{SHOTS}/8-cast.png")
+
+        # Livro de fatos: abrir, adicionar uma entrada e salvar
+        page.click("[data-action=open-lore]")
+        page.wait_for_selector("#lore-list .lore-row")
+        n = page.locator("#lore-list .lore-row").count()
+        page.click("[data-action=add-lore]")
+        page.fill("#lore-list .lore-row:last-child .lore-name", "Gato do balcão")
+        page.fill("#lore-list .lore-row:last-child .lore-keys", "gato, balcão")
+        page.fill("#lore-list .lore-row:last-child .lore-text", "Um gato cinza que dorme no balcão da tasca.")
+        page.screenshot(path=f"{SHOTS}/9-lore.png")
+        page.click("[data-action=save-lore]")
+        page.wait_for_selector("#modal-lore", state="hidden")
+        page.click("[data-action=open-lore]")
+        page.wait_for_selector("#lore-list .lore-row")
+        check(page.locator("#lore-list .lore-row").count() == n + 1, "entrada nova do livro de fatos foi salva")
 
         browser.close()
 finally:

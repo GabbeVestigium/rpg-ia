@@ -97,8 +97,8 @@ rpg-ia/
 
 ```
 GET  /api/status, /api/settings          PUT /api/settings
-GET/POST /api/characters                 GET/PUT/DELETE /api/characters/{id}
-GET  /api/worlds, /api/worlds/{id}       PUT /api/worlds/{id}
+GET/POST /api/characters                 GET/PUT/DELETE /api/characters/{id}   GET /api/characters/{id}/prompt-size
+GET  /api/worlds, /api/worlds/{id}       PUT /api/worlds/{id}   (o mundo inclui o livro de fatos: entries)
 GET  /api/rpg/options
 POST /api/session/new                    GET/DELETE /api/session/{id}
 GET  /api/sessions                       GET/PUT /api/session/{id}/memory
@@ -123,6 +123,8 @@ GET  /api/tts/status                     POST /api/tts  (Piper, devolve WAV)
   `appearance_tags` fixas do personagem (rosto consistente). Na GPU de 6 GB o LLM é descarregado
   da VRAM antes do SD gerar (`scene_auto_unload`).
 - Voz: engine `browser` (Web Speech API, sem instalar nada) ou `piper` (CPU). Ler só falas ou tudo.
+- Livro de fatos por mundo (`World.entries`, `backend/lorebook.py`): entradas com palavras-chave entram no prompt só quando
+  citadas nas últimas mensagens (máx. 5 entradas e 1400 caracteres). Mantenha `World.lore` curto e ponha o detalhe em entradas.
 - Galeria com criador/editor de personagem na interface.
 - Configurações na interface (modelo instalado, temperatura, min_p, contexto, tamanho da resposta...).
 - RPG: 3 modos (narrativo, médio, completo), d20 automático, XP, quests, relacionamento.

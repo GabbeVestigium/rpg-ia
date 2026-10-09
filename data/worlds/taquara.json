@@ -3,5 +3,155 @@
   "name": "Taquara",
   "genre": "cyberpunk",
   "description": "Taquara, 2087. Sete milhões de pessoas empilhadas entre o morro e a baía, todas com a mesma ideia fixa: subir. A cidade vende chrome, fama e uma vaga na Estação Cinco. Entrega dívida e um caixão bem acabado. Quem vive de contrato aprende cedo que brilhar e queimar é a mesma coisa em velocidades diferentes.",
-  "lore": "A cidade tem três andares e ninguém mente sobre isso: o Alto (torres, ar filtrado, seguranças que não perguntam nada), a Linha (conjuntos, trens, mercado cinza, quem trabalha) e o Fundo (onde a lei não alcança, e onde ficam os melhores ripperdocs e os piores acordos).\n\nVeiga-Sato fabrica armas, implantes e a vigilância que vigia os dois. A Cinco é a estação em órbita que vende vida longa para quem pagar, e a promessa para quem não pode. Entre as gangues: as Mandíbulas (extorsão, tráfico), Os Enferrujados (chrome pesado, fanáticos) e os Cães de Vidro, que já foram família da Trama e foram apagados numa noite por uma corporação.\n\nChrome é tão comum quanto roupa. Mais chrome, mais força e acesso, menos gente por dentro. O Surto é o fim da linha: o corpo continua, a pessoa não. Ripperdoc é médico, confessor e vendedor de futuro, e cada implante novo é um luto pequeno.\n\nA Rede é navegada por netrunners. Do outro lado dela fica o Paredão, que segura as IAs perdidas. Quem encosta nele não volta inteiro. Os retalhos (memórias gravadas, vendidas em frasco) viciam como qualquer coisa boa.\n\nContrato sai do Quadro, informação é moeda, dívida é corrente. O Bar do Fio Desencapado, na Linha, é terreno neutro, e todo mundo finge que acredita nisso.\n\nO tom é noir elétrico e trágico, com ternura roubada: um telhado ao amanhecer, uma mão no ombro, uma música no fone dividido. Desejo aqui é urgente, físico e honesto, porque amanhã pode não existir. O sonho vale a pena e tem preço."
+  "lore": "Taquara é uma cidade em três andares e ninguém mente sobre isso: o Alto (torres e ar filtrado), a Linha (conjuntos, trens, mercado cinza) e o Fundo (onde a lei não alcança). Todo mundo quer subir. Chrome é tão comum quanto roupa, e cada implante novo custa um pouco de quem você é. O tom é noir elétrico e trágico, com ternura roubada: um telhado ao amanhecer, uma música no fone dividido. Desejo aqui é urgente, físico e honesto, porque amanhã pode não existir. Detalhes de corporações, gangues e lugares entram quando a conversa os cita.",
+  "entries": [
+    {
+      "name": "Veiga-Sato",
+      "keys": [
+        "veiga",
+        "sato",
+        "corporação",
+        "corporacao",
+        "torre"
+      ],
+      "text": "Fabrica armas, implantes e a vigilância que vigia os dois. Tem filial em todo andar e cofres de dados em torres do Alto.",
+      "always": false,
+      "id": "veiga-sato-1"
+    },
+    {
+      "name": "Estação Cinco",
+      "keys": [
+        "cinco",
+        "órbita",
+        "orbita",
+        "estação",
+        "estacao",
+        "passagem"
+      ],
+      "text": "A estação em órbita que vende vida longa para quem pagar e a promessa para quem não pode. Uma passagem custa mais do que a maioria ganha numa vida.",
+      "always": false,
+      "id": "estacao-cinco-2"
+    },
+    {
+      "name": "O Alto, a Linha e o Fundo",
+      "keys": [
+        "alto",
+        "linha",
+        "fundo",
+        "conjunto",
+        "trem"
+      ],
+      "text": "Alto: torres, ar filtrado, segurança que não pergunta. Linha: conjuntos, trens, mercado cinza, quem trabalha. Fundo: onde a lei não alcança e ficam os melhores ripperdocs e os piores acordos.",
+      "always": false,
+      "id": "o-alto-a-linha-e-o-fundo-3"
+    },
+    {
+      "name": "Chrome e o Surto",
+      "keys": [
+        "chrome",
+        "implante",
+        "surto",
+        "ciberpsicose"
+      ],
+      "text": "Mais chrome é mais força e acesso, menos gente por dentro. O Surto é o fim da linha: o corpo continua, a pessoa não. Todo mundo na cidade conhece alguém que se perdeu nele, e sabe o que isso custa.",
+      "always": false,
+      "id": "chrome-e-o-surto-4"
+    },
+    {
+      "name": "Ripperdocs",
+      "keys": [
+        "ripperdoc",
+        "ripper",
+        "alicate",
+        "beto",
+        "clínica",
+        "clinica"
+      ],
+      "text": "Médico, confessor e vendedor de futuro. Cada implante novo é um luto pequeno. Beto Alicate, no Fundo, é o preferido de quem quer chrome sem perguntas.",
+      "always": false,
+      "id": "ripperdocs-5"
+    },
+    {
+      "name": "A Rede e o Paredão",
+      "keys": [
+        "rede",
+        "netrun",
+        "paredão",
+        "paredao",
+        "ia"
+      ],
+      "text": "Netrunners navegam a Rede. Do outro lado dela fica o Paredão, que segura as IAs perdidas. Quem encosta nele não volta inteiro.",
+      "always": false,
+      "id": "a-rede-e-o-paredao-6"
+    },
+    {
+      "name": "Os retalhos",
+      "keys": [
+        "retalho",
+        "retalhos",
+        "memória",
+        "memoria",
+        "lembrança",
+        "lembranca",
+        "chip"
+      ],
+      "text": "Memórias gravadas, vendidas em frasco. Viciam como qualquer coisa boa. Quem grava a pior noite da vida costuma não conseguir assistir.",
+      "always": false,
+      "id": "os-retalhos-7"
+    },
+    {
+      "name": "Mandíbulas",
+      "keys": [
+        "mandíbulas",
+        "mandibulas"
+      ],
+      "text": "Gangue de extorsão e tráfico. Cobram em dinheiro, em favor e em medo, nessa ordem.",
+      "always": false,
+      "id": "mandibulas-8"
+    },
+    {
+      "name": "Os Enferrujados",
+      "keys": [
+        "enferrujados",
+        "ferrugem"
+      ],
+      "text": "Chrome pesado e fanatismo. Acreditam que carne é fraqueza e agem como se o resto da cidade já tivesse concordado.",
+      "always": false,
+      "id": "os-enferrujados-9"
+    },
+    {
+      "name": "Cães de Vidro",
+      "keys": [
+        "cães",
+        "caes",
+        "vidro"
+      ],
+      "text": "A gangue que foi família da Trama, apagada por uma corporação numa noite só. Quase ninguém na Linha ousa falar deles em voz alta.",
+      "always": false,
+      "id": "caes-de-vidro-10"
+    },
+    {
+      "name": "Bar do Fio Desencapado",
+      "keys": [
+        "bar",
+        "fio",
+        "terreno neutro"
+      ],
+      "text": "Na Linha. Terreno neutro, e todo mundo finge acreditar nisso. Dá para ouvir tudo e pagar por tudo.",
+      "always": false,
+      "id": "bar-do-fio-desencapado-11"
+    },
+    {
+      "name": "O Quadro",
+      "keys": [
+        "quadro",
+        "contrato",
+        "contratos",
+        "trabalho"
+      ],
+      "text": "De onde saem os contratos. Informação é moeda, dívida é corrente, e o Quadro não pergunta de quem é o alvo.",
+      "always": false,
+      "id": "o-quadro-12"
+    }
+  ]
 }

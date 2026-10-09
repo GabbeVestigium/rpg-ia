@@ -540,3 +540,12 @@ textarea#user-input::placeholder{color:var(--text3);}
 .cast-row.down .cast-label{animation:pulse 1.2s 2;}
 
 .swipe-label{font-size:0.74rem;color:var(--text2);align-self:center;padding:0 2px;font-variant-numeric:tabular-nums;}
+
+/* livro de fatos */
+.lore-list{display:flex;flex-direction:column;gap:12px;margin:12px 0;max-height:46vh;overflow-y:auto;padding-right:4px;}
+.lore-row{display:flex;flex-direction:column;gap:6px;padding:12px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--rs);}
+.lore-row-head{display:flex;gap:10px;align-items:center;}
+.lore-row input[type=text],.lore-row textarea{background:var(--bginput);color:var(--text);border:1px solid var(--border);border-radius:var(--rs);padding:8px 10px;font:inherit;font-size:0.88rem;width:100%;}
+.lore-row textarea{resize:vertical;line-height:1.5;}
+.lore-always{font-size:0.78rem;color:var(--text2);white-space:nowrap;display:flex;gap:4px;align-items:center;}
+.lore-name{font-weight:600;}

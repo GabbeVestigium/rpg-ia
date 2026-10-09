@@ -3,5 +3,169 @@
   "name": "Quermes",
   "genre": "isekai / fantasia medieval",
   "description": "Quermes é um reino pequeno, teimoso e velho, espremido entre uma serra que nunca deixou ninguém passar e um mar que nunca deixou ninguém voltar. Ossúrio, o rei que perdeu a própria sombra numa guerra de trezentos anos atrás, está acordando debaixo da Cova de Tarsa. A coroa não tem exército para isso. Tem um rito emprestado dos deuses mortos, e o rito funciona: de tempos em tempos, alguém de outro mundo cai no Salão de Serrafina. Desta vez foi você.",
-  "lore": "Quem chega de fora traz um brilho que ninguém explica e todo mundo sente. As pessoas se abrem, confiam, se encantam. Os nativos chamam isso de a Graça. É por causa dela que tanta gente capaz e independente acaba dando voltas em torno do recém-chegado, e ninguém em Quermes acha isso estranho: sempre foi assim com os de fora.\n\nO recém-chegado ganha uma Bênção (um talento fora do comum, que a história decide), um nível e um cartão da Roda, a guilda que aceita contratos, paga recompensa e serve de ponto de encontro. Os ranks vão de F a S. Pode haver telas de status, mas ditas com zoeira, nunca como planilha.\n\nQuem manda e quem atrapalha: a Casa de Serrafina (a coroa, a capital e a Guarda), o Colégio (magos de carreira, que expulsam quem estuda por fora), os Enlutados (clero dos deuses mortos, que cuida de doentes e de defuntos), a Roda (guilda, mercenários e informantes), Iriá (o povo élfico, curioso e fechado), e o Rebanho (gente que quer o Ossúrio de volta e acha isso um ato de fé).\n\nOnde as coisas acontecem: a Tasca do Javali Cego (base do grupo, cerveja ruim e boa comida), o Salão de Serrafina (onde o rito aconteceu), a Mata de Ibira (criaturas antigas), a Cova de Tarsa (ruínas, um pedaço do selo do Ossúrio e a expedição de amanhã), os Banhos do Frei Jorge (águas quentes, fofoca e acidentes), a Praça Velha (feira, boatos e encrenca).\n\nO tom é de comédia romântica com aventura: dia comum cheio de gente tropeçando e se oferecendo, missão com perigo de verdade. A intimidade entre adultos acontece quando o herói conduz e a pessoa quer. Ninguém é um estereótipo por muito tempo: cada uma tem um motivo para ser do jeito que é."
+  "lore": "Quem chega de fora carrega a Graça: um brilho que faz as pessoas confiarem e se encantarem, e é por isso que tanta gente capaz acaba dando voltas em torno do recém-chegado. Ninguém em Quermes estranha, sempre foi assim com os de fora. O forasteiro tem uma Bênção (um talento que a história decide), um nível e um cartão da Roda; telas de status só com zoeira, nunca como planilha. O tom é comédia romântica com aventura: dia comum cheio de gente tropeçando e se oferecendo, missão com perigo de verdade. A intimidade entre adultos acontece quando o herói conduz e a pessoa quer. Detalhes de lugares e grupos entram na conversa quando surgem.",
+  "entries": [
+    {
+      "name": "Ossúrio",
+      "keys": [
+        "ossúrio",
+        "ossurio",
+        "rei sem sombra",
+        "selo"
+      ],
+      "text": "O rei que perdeu a própria sombra numa guerra de trezentos anos atrás. Está acordando debaixo da Cova de Tarsa. A coroa não tem exército para isso, só o rito dos deuses mortos que trouxe o herói.",
+      "always": false,
+      "id": "ossurio-1"
+    },
+    {
+      "name": "A Graça",
+      "keys": [
+        "graça",
+        "graca",
+        "brilho",
+        "aura"
+      ],
+      "text": "O brilho que todo forasteiro traz e ninguém sabe explicar. Os nativos sentem sem ver: confiam, se abrem, se encantam. Não é feitiço, é como o mundo reage a quem vem de fora.",
+      "always": false,
+      "id": "a-graca-2"
+    },
+    {
+      "name": "A Roda",
+      "keys": [
+        "roda",
+        "guilda",
+        "rank",
+        "cartão",
+        "cartao",
+        "contrato",
+        "missão",
+        "missao"
+      ],
+      "text": "A guilda que aceita contratos, paga recompensa e serve de ponto de encontro. Ranks de F a S. O cartão da Roda é o documento de quem não tem nome em Quermes.",
+      "always": false,
+      "id": "a-roda-3"
+    },
+    {
+      "name": "O Colégio",
+      "keys": [
+        "colégio",
+        "colegio",
+        "magos",
+        "magia proibida",
+        "lacre"
+      ],
+      "text": "Os magos de carreira, que expulsam quem estuda por fora. Selam o conhecimento em lacres e tratam a magia como propriedade. Yasmin foi expulsa daqui.",
+      "always": false,
+      "id": "o-colegio-4"
+    },
+    {
+      "name": "Os Enlutados",
+      "keys": [
+        "enlutados",
+        "clero",
+        "deuses mortos",
+        "igreja",
+        "benzer"
+      ],
+      "text": "O clero dos deuses mortos. Cuidam de doentes e de defuntos, rezam para quem já não escuta e sabem melhor que ninguém o que o rito custa.",
+      "always": false,
+      "id": "os-enlutados-5"
+    },
+    {
+      "name": "Iriá",
+      "keys": [
+        "iriá",
+        "iria",
+        "elfos",
+        "élfico",
+        "elfico"
+      ],
+      "text": "O povo élfico, fechado e curioso. Vive devagar, recebe poucos humanos e tem opinião sobre todos eles.",
+      "always": false,
+      "id": "iria-6"
+    },
+    {
+      "name": "O Rebanho",
+      "keys": [
+        "rebanho",
+        "seita",
+        "culto"
+      ],
+      "text": "Gente que quer o Ossúrio de volta e acha isso um ato de fé. Se espalham em silêncio, em aldeias e em tavernas.",
+      "always": false,
+      "id": "o-rebanho-7"
+    },
+    {
+      "name": "Cova de Tarsa",
+      "keys": [
+        "cova",
+        "tarsa",
+        "expedição",
+        "expedicao"
+      ],
+      "text": "Ruínas onde está um pedaço do selo do Ossúrio. É o destino da expedição de amanhã, e ninguém voltou de lá sem perder alguma coisa.",
+      "always": false,
+      "id": "cova-de-tarsa-8"
+    },
+    {
+      "name": "Tasca do Javali Cego",
+      "keys": [
+        "tasca",
+        "javali",
+        "taverna"
+      ],
+      "text": "A base do grupo. Cerveja ruim, comida boa, uma dona que finge não ouvir nada e ouve tudo.",
+      "always": false,
+      "id": "tasca-do-javali-cego-9"
+    },
+    {
+      "name": "Banhos do Frei Jorge",
+      "keys": [
+        "banho",
+        "banhos",
+        "termas",
+        "frei jorge"
+      ],
+      "text": "Águas quentes, fofoca e acidentes. É onde os encontros mais constrangedores de Quermes acontecem.",
+      "always": false,
+      "id": "banhos-do-frei-jorge-10"
+    },
+    {
+      "name": "Praça Velha",
+      "keys": [
+        "praça",
+        "praca",
+        "feira",
+        "boato"
+      ],
+      "text": "A feira da capital: itens, boatos e encrenca em partes iguais.",
+      "always": false,
+      "id": "praca-velha-11"
+    },
+    {
+      "name": "Mata de Ibira",
+      "keys": [
+        "mata",
+        "ibira",
+        "floresta"
+      ],
+      "text": "Criaturas antigas e trilhas que mudam. Os locais não entram à noite.",
+      "always": false,
+      "id": "mata-de-ibira-12"
+    },
+    {
+      "name": "Casa de Serrafina",
+      "keys": [
+        "serrafina",
+        "coroa",
+        "guarda",
+        "palácio",
+        "palacio",
+        "rei"
+      ],
+      "text": "A casa que governa Quermes, com capital, coroa e a Guarda. Foi quem mandou fazer o rito e quem paga as contas dele.",
+      "always": false,
+      "id": "casa-de-serrafina-13"
+    }
+  ]
 }

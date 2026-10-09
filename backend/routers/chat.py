@@ -15,6 +15,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 
 from backend.character_manager import load_character, load_world
+from backend.lorebook import select_lore
 from backend.memory import history_budget, prompt_window, update_summary, window_start
 from backend.models import ChatRequest, EditMessageRequest, MessageRole, RegenerateRequest, SwipeRequest
 from backend.ollama_client import OllamaError, build_system_prompt, stream_chat
@@ -126,10 +127,13 @@ async def _reply(session_id: str, character_id: str, user_text: Optional[str],
                 yield _sse({"type": "roll", "result": roll["result"], "event": roll["event"]})
 
         world = load_world(character.world_id) if character.world_id else None
+        # Fatos do livro do mundo que a conversa acabou de citar (últimas mensagens).
+        lore = select_lore(world, [m.content for m in session.history[-4:]])
         system_prompt = build_system_prompt(
             character, world, rpg,
             memory_summary=session.summary if settings["memory_enabled"] else "",
             response_length=settings["response_length"],
+            lore_entries=lore,
         )
 
         full = ""

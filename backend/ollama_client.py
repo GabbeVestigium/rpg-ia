@@ -15,6 +15,7 @@ from typing import AsyncIterator, Dict, List, Optional
 import httpx
 
 from backend.config import OLLAMA_BASE_URL
+from backend.lorebook import lore_block
 from backend.models import Message
 from backend.rpg_engine import build_cast_context, build_rpg_context
 from backend.rpg_models import GameMode, RPGState
@@ -35,6 +36,7 @@ def build_system_prompt(
     rpg_state: Optional[RPGState] = None,
     memory_summary: str = "",
     response_length: str = "medium",
+    lore_entries=None,
 ) -> str:
     """Monta o system prompt completo: personagem + mundo + RPG + memória + regras."""
     world_context = ""
@@ -45,7 +47,7 @@ def build_system_prompt(
 
 ### Lore e regras do mundo:
 {world.lore}
-"""
+{lore_block(lore_entries or [])}"""
 
     rpg_context = ""
     if rpg_state and rpg_state.mode != GameMode.NARRATIVE:

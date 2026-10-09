@@ -12,7 +12,7 @@ from pydantic import ValidationError
 from backend.config import CHARACTERS_DIR, WORLDS_DIR, PORTRAITS_DIR
 from backend.models import Character, World
 from backend.safety import validate_age, validate_texts
-from backend.storage import is_safe_id, read_json, write_json_atomic
+from backend.storage import is_safe_id, read_json, slugify, write_json_atomic
 
 
 def _char_path(character_id: str) -> str:
@@ -129,6 +129,9 @@ def save_world(world: World) -> World:
     if not is_safe_id(world.id):
         raise ValueError("id do mundo inválido")
     validate_texts(world.name, world.description, world.lore)
+    for i, entry in enumerate(world.entries):
+        validate_texts(entry.name, entry.text, " ".join(entry.keys))
+        entry.id = entry.id or f"{slugify(entry.name)}-{i + 1}"
     write_json_atomic(_world_path(world.id), world.model_dump(mode="json"))
     return world
 

@@ -24,6 +24,9 @@ http://127.0.0.1:8000 e abre o navegador. Ou use o `🎮 Iniciar RPG-IA.bat`.
   O 🔄 guarda a versão anterior: use ◀ 2/3 ▶ para voltar e escolher a melhor resposta.
 - **Memória de longo prazo**: a conversa inteira fica salva; o modelo recebe as mensagens recentes
   (ajustadas ao contexto) mais um resumo automático do resto. Você vê e edita o resumo em 🧠 Memória.
+- **Livro de fatos** (📚 Fatos): detalhes do mundo (lugares, grupos, regras) que só entram na conversa quando você os cita.
+  O núcleo do mundo fica curto e o resto aparece sob demanda, o que poupa contexto na placa de 6 GB.
+- **Aviso de personagem pesado**: se a ficha fixa ocupa contexto demais, o jogo avisa antes de começar.
 - **Imagens**: retrato do personagem e botão 🖼️ Cena, que ilustra o momento atual mantendo o visual do personagem.
 - **Voz**: 🔊 em cada resposta, ou leitura automática. Pode ler só as falas e pular as *ações*.
 - **Galeria de personagens** com criador e editor na própria interface.

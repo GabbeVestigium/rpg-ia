@@ -25,6 +25,27 @@ async def get_character(character_id: str):
     return character.model_dump(mode="json")
 
 
+@router.get("/characters/{character_id}/prompt-size")
+async def prompt_size(character_id: str):
+    """Quanto do contexto o prompt fixo deste personagem ocupa (para avisar quando está pesado)."""
+    from backend.memory import est_tokens, history_budget
+    from backend.ollama_client import build_system_prompt
+    from backend.rpg_models import RPGState
+    from backend.settings_manager import get_settings
+
+    character = load_character(safe_id(character_id, "id do personagem"))
+    if not character:
+        raise HTTPException(404, "Personagem não encontrado")
+    world = load_world(character.world_id) if character.world_id else None
+    prompt = build_system_prompt(character, world, RPGState())
+    settings = get_settings()
+    return {
+        "tokens": est_tokens(prompt),
+        "num_ctx": settings["num_ctx"],
+        "history_left": max(0, history_budget(prompt, settings)),
+    }
+
+
 @router.put("/characters/{character_id}")
 async def put_character(character_id: str, character: Character):
     """Cria ou atualiza um personagem. Rejeita menores de idade (regra 18+)."""

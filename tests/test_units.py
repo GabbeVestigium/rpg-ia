@@ -30,6 +30,7 @@ def test_strip_think():
 @pytest.mark.parametrize("text", [
     "Lyra é uma maga de 26 anos", "foi expulsa há 5 anos", "a garota sorriu",
     "a guerra durou 300 anos", "Tem 3 espadas", "childhood trauma",
+    "uma mulher de 26 anos", "a guerra de 5 anos acabou", "ela foi expulsa há 5 anos", "um homem com 40 anos",
 ])
 def test_safety_allows_normal_text(text):
     assert find_problems(text) == []
@@ -37,6 +38,7 @@ def test_safety_allows_normal_text(text):
 
 @pytest.mark.parametrize("text", [
     "ela tem 15 anos", "uma loli", "15-year-old girl", "aged 14", "aparência infantil", "teen",
+    "uma personagem de 15 anos", "garota de 17 anos", "um rapaz bem novo de 16 anos", "menina com 12 anos",
 ])
 def test_safety_blocks_minor_markers(text):
     assert find_problems(text)
@@ -94,3 +96,44 @@ def test_cast_matching_by_name_alias_and_last_speaker():
 def test_slugify_avoids_windows_reserved_names():
     assert slugify("Con") == "con-1" and slugify("NUL") == "nul-1" and slugify("Com3") == "com3-1"
     assert slugify("Conan") == "conan"
+
+
+def _world(*entries):
+    from backend.models import World
+    return World(id="w", name="W", description="d", entries=list(entries))
+
+
+def test_lorebook_triggers_by_key_accent_insensitive_and_whole_word():
+    from backend.lorebook import select_lore
+    from backend.models import LoreEntry
+    w = _world(LoreEntry(name="Cova", keys=["cova", "tarsa"], text="ruínas"),
+               LoreEntry(name="Graça", keys=["graça"], text="brilho"),
+               LoreEntry(name="Rei", keys=["rei"], text="ossúrio"))
+    names = lambda texts: [e.name for e in select_lore(w, texts)]
+    assert names(["vamos para a Cova de Tarsa"]) == ["Cova"]
+    assert names(["a GRACA dele"]) == ["Graça"]                 # sem acento e em maiúscula casa
+    assert names(["o reino é grande"]) == []                    # 'rei' dentro de 'reino' não conta
+    assert names(["rei e cova"]) == ["Cova", "Rei"]             # a citada por último vem primeiro
+    assert select_lore(None, ["cova"]) == [] and select_lore(_world(), ["cova"]) == []
+
+
+def test_lorebook_most_recent_mention_first_and_budget_cut():
+    from backend.lorebook import MAX_CHARS, MAX_ENTRIES, select_lore
+    from backend.models import LoreEntry
+    many = [LoreEntry(name=f"E{i}", keys=[f"k{i}"], text="x" * 10) for i in range(10)]
+    w = _world(*many)
+    got = select_lore(w, [" ".join(f"k{i}" for i in range(10))])
+    assert len(got) == MAX_ENTRIES and got[0].name == "E9"       # a citada por último vem primeiro
+    big = _world(LoreEntry(name="A", keys=["a"], text="x" * (MAX_CHARS - 50)),
+                 LoreEntry(name="B", keys=["b"], text="y" * 200))
+    # B é a mais recente e entra; A somada estouraria o orçamento de caracteres e é cortada.
+    assert [e.name for e in select_lore(big, ["a b"])] == ["B"]
+
+
+def test_lorebook_always_entries_are_included_without_keys():
+    from backend.lorebook import select_lore
+    from backend.models import LoreEntry
+    w = _world(LoreEntry(name="Regra", keys=[], text="sempre vale", always=True),
+               LoreEntry(name="Cova", keys=["cova"], text="ruínas"))
+    assert [e.name for e in select_lore(w, ["nada a ver"])] == ["Regra"]
+    assert [e.name for e in select_lore(w, ["a cova"])] == ["Regra", "Cova"]

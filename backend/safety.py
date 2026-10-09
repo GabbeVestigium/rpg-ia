@@ -30,6 +30,10 @@ _MINOR_RE = re.compile(r"\b(?:" + "|".join(_MINOR_TERMS) + r")\b", re.IGNORECASE
 _AGE_PATTERNS = [
     re.compile(r"\b(?:tem|ter|aparenta(?:ndo)?|parece(?:ndo)?(?: ter)?|com)\s+(\d{1,2})\s*anos?\b", re.IGNORECASE),
     re.compile(r"\b(\d{1,2})\s*anos\s+de\s+idade\b", re.IGNORECASE),
+    # "uma personagem de 15 anos", "garota de 17 anos" (só com substantivo de pessoa, para não
+    # barrar "guerra de 5 anos" nem "expulsa há 5 anos")
+    re.compile(r"\b(?:garot[ao]s?|menin[ao]s?|moç[ao]s?|jovem|personagem|mulher|homem|rapaz|alun[ao])"
+               r"\s+(?:[\wçãõáéíóúâêô]+\s+){0,2}?(?:de|com|tem)\s+(\d{1,2})\s*anos?\b", re.IGNORECASE),
     re.compile(r"\bidade\s*(?:de|:)?\s*(\d{1,2})\b", re.IGNORECASE),
     re.compile(r"\b(\d{1,2})[\s-]*(?:year|yr)s?[\s-]*old\b", re.IGNORECASE),
     re.compile(r"\bage[d]?\s*[:=]?\s*(\d{1,2})\b", re.IGNORECASE),

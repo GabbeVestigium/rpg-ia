@@ -3,6 +3,7 @@
 import * as chat from './chat.js';
 import { deleteCharacter, editCharacter, newCharacter, saveCharacter } from './editor.js';
 import { initLayout } from './layout.js';
+import { addLore, deleteLore, openLore, saveLore } from './lorebook.js';
 import { openMemory, saveMemory } from './memory.js';
 import { generatePortrait, generateScene } from './portrait.js';
 import * as screens from './screens.js';
@@ -44,6 +45,11 @@ const actions = {
   'manual-roll': () => chat.manualRoll(),
   'generate-portrait': () => generatePortrait(),
   'generate-scene': () => generateScene(),
+  'open-lore': () => openLore(),
+  'add-lore': () => addLore(),
+  'delete-lore': (el) => deleteLore(Number(el.dataset.row)),
+  'save-lore': () => saveLore(),
+  'close-lore': () => closeModal('modal-lore'),
   'open-memory': () => openMemory(),
   'save-memory': () => saveMemory(),
   'close-memory': () => closeModal('modal-memory'),
@@ -71,7 +77,7 @@ input.addEventListener('input', () => chat.autoResize(input));
 // Fecha modais com Esc.
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
-  ['modal-settings', 'modal-editor', 'modal-memory', 'modal-mode'].forEach(closeModal);
+  ['modal-settings', 'modal-editor', 'modal-memory', 'modal-mode', 'modal-lore'].forEach(closeModal);
 });
 
 async function init() {

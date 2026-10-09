@@ -46,12 +46,22 @@ class Character(BaseModel):
     tags: List[str] = []
 
 
+class LoreEntry(BaseModel):
+    """Fato do mundo que só entra no prompt quando a conversa toca no assunto."""
+    id: str = ""
+    name: str                      # título curto ("Cova de Tarsa")
+    keys: List[str] = []           # palavras que ativam a entrada ("cova", "tarsa")
+    text: str                      # o fato em si, 1 a 3 frases
+    always: bool = False           # True: entra em todo prompt (gasta contexto)
+
+
 class World(BaseModel):
     id: str
     name: str
     description: str
     genre: str = ""                # fantasy, sci-fi, romance, horror, etc.
-    lore: str = ""                 # Regras e contexto do mundo
+    lore: str = ""                 # Núcleo do mundo, sempre no prompt (mantenha curto)
+    entries: List[LoreEntry] = []  # Livro de fatos: entram só quando a conversa os cita
 
 
 class ChatRequest(BaseModel):
