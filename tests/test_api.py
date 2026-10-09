@@ -344,3 +344,43 @@ def test_prompt_size_endpoint_reports_remaining_budget(client):
     light = client.get("/api/characters/trama/prompt-size").json()
     assert light["history_left"] > p["history_left"]               # a Mesa é mais pesada que a Trama
     assert client.get("/api/characters/nao-existe/prompt-size").status_code == 404
+
+
+def test_profile_roundtrip_and_adult_rule(client):
+    assert client.get("/api/profile").json()["name"] == ""
+    ok = {"name": "Tonico Brasa", "age": 29, "appearance": "alto, barba por fazer", "about": "Fala pouco e rói a unha quando mente."}
+    assert client.put("/api/profile", json=ok).status_code == 200
+    assert client.get("/api/profile").json() == ok
+    assert client.put("/api/profile", json={**ok, "age": 17}).status_code == 422
+    r = client.put("/api/profile", json={**ok, "appearance": "uma personagem de 15 anos"})
+    assert r.status_code == 422
+    assert client.get("/api/profile").json() == ok                 # recusado não sobrescreve
+
+
+def test_profile_reaches_the_prompt_even_in_narrative_mode(client, services):
+    client.put("/api/profile", json={"name": "Tonico Brasa", "age": 29, "appearance": "alto, barba por fazer",
+                                     "about": "Fala pouco e rói a unha quando mente."})
+    sid = new_session(client, char="trama", mode="narrative")
+    client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": "Oi"})
+    system = _system_of_last_chat(services)
+    assert "Sobre o jogador" in system and "Tonico Brasa (29 anos)" in system
+    assert "barba por fazer" in system and "rói a unha" in system
+    assert "NUNCA escreva falas, pensamentos ou ações de Tonico Brasa" in system   # a regra usa o seu nome
+
+
+def test_created_player_wins_over_profile_but_keeps_the_way_you_act(client, services):
+    client.put("/api/profile", json={"name": "Tonico Brasa", "age": 29, "appearance": "alto",
+                                     "about": "Fala pouco."})
+    sid = new_session(client, char="trama", mode="medium")
+    client.post("/api/player/create", json={"session_id": sid, "name": "Kael", "race": "humano",
+                                            "char_class": "bardo", "mode": "medium", "age": 31})
+    client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": "Oi"})
+    system = _system_of_last_chat(services)
+    assert "Nome: Kael" in system and "Tonico" not in system   # o nome do jogador criado vale, o do perfil não aparece
+    assert "Jeito de agir e falar: Fala pouco." in system
+
+
+def test_no_profile_means_no_extra_section(client, services):
+    sid = new_session(client, char="trama")
+    client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": "Oi"})
+    assert "Sobre o jogador" not in _system_of_last_chat(services)

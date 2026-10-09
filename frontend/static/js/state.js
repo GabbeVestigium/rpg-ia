@@ -12,5 +12,6 @@ export const state = {
   abort: null,          // AbortController da resposta em andamento
   rpgOptions: { races: [], classes: [], modes: [] },
   settings: null,
+  profile: null,        // { name, age, appearance, about } salvo em Meu perfil
   sdAvailable: false,
 };

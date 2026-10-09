@@ -24,6 +24,7 @@
         <span id="status-dot" class="dot offline"></span>
         <span id="status-text">Verificando Ollama...</span>
       </div>
+      <button class="btn-secondary-sm" data-action="open-profile" title="Quem você é, em todas as histórias">👤 Meu perfil</button>
       <button class="btn-secondary-sm" data-action="new-character">➕ Novo personagem</button>
       <button class="btn-secondary-sm" data-action="open-settings">⚙️ Configurações</button>
     </div>
@@ -246,6 +247,19 @@
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- MODAL: PERFIL DO JOGADOR -->
+<div id="modal-profile" class="modal-overlay" style="display:none">
+  <div class="modal modal-wide">
+    <h3 class="modal-title">👤 Meu perfil</h3>
+    <p class="modal-help">Quem você é, em todas as histórias, inclusive no modo Narrativo. Os personagens passam a saber seu nome, sua aparência e seu jeito. Nos modos Médio e Completo, o que você preenche aqui já vem na criação do personagem. Todos têm 18 anos ou mais.</p>
+    <form id="profile-form" class="settings-form" autocomplete="off"></form>
+    <div class="modal-actions">
+      <button class="btn-cancel" data-action="close-profile">Cancelar</button>
+      <button class="btn-primary" data-action="save-profile">Salvar</button>
+    </div>
   </div>
 </div>
 

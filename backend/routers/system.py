@@ -7,7 +7,9 @@ from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from backend import sd_client, tts_client
+from backend.models import PlayerProfile
 from backend.ollama_client import check_ollama
+from backend.profile_manager import load_profile, save_profile
 from backend.settings_manager import DEFAULTS, get_settings, update_settings
 
 router = APIRouter(prefix="/api", tags=["system"])
@@ -26,6 +28,19 @@ async def read_settings():
 @router.put("/settings")
 async def write_settings(changes: Dict[str, Any]):
     return {"settings": update_settings(changes)}
+
+
+# ─── PERFIL DO JOGADOR ────────────────────────────────────────────────────────
+
+@router.get("/profile")
+async def read_profile():
+    return load_profile().model_dump()
+
+
+@router.put("/profile")
+async def write_profile(profile: PlayerProfile):
+    """Salva quem você é em todas as histórias. Idade abaixo de 18 é recusada (422)."""
+    return save_profile(profile).model_dump()
 
 
 # ─── VOZ ──────────────────────────────────────────────────────────────────────

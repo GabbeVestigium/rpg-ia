@@ -5,6 +5,7 @@ import { deleteCharacter, editCharacter, newCharacter, saveCharacter } from './e
 import { initLayout } from './layout.js';
 import { addLore, deleteLore, openLore, saveLore } from './lorebook.js';
 import { openMemory, saveMemory } from './memory.js';
+import { loadProfile, openProfile, saveProfile } from './profile.js';
 import { generatePortrait, generateScene } from './portrait.js';
 import * as screens from './screens.js';
 import { openSettings, saveSettings, toggleAutoplay, updateAutoplayButton } from './settings.js';
@@ -55,6 +56,9 @@ const actions = {
   'close-memory': () => closeModal('modal-memory'),
   'toggle-autoplay': () => toggleAutoplay(),
   // configurações e editor
+  'open-profile': () => openProfile(),
+  'save-profile': () => saveProfile(),
+  'close-profile': () => closeModal('modal-profile'),
   'open-settings': () => openSettings(),
   'save-settings': () => saveSettings(),
   'close-settings': () => closeModal('modal-settings'),
@@ -77,7 +81,7 @@ input.addEventListener('input', () => chat.autoResize(input));
 // Fecha modais com Esc.
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
-  ['modal-settings', 'modal-editor', 'modal-memory', 'modal-mode', 'modal-lore'].forEach(closeModal);
+  ['modal-settings', 'modal-editor', 'modal-memory', 'modal-mode', 'modal-lore', 'modal-profile'].forEach(closeModal);
 });
 
 async function init() {
@@ -88,7 +92,7 @@ async function init() {
   } catch { /* usa os padrões do servidor quando voltar */ }
   // Algumas engines de voz do navegador só listam as vozes depois de carregar.
   if ('speechSynthesis' in window) window.speechSynthesis.getVoices();
-  await Promise.all([screens.checkStatus(), screens.loadCharacters(), screens.loadRpgOptions()]);
+  await Promise.all([screens.checkStatus(), screens.loadCharacters(), screens.loadRpgOptions(), loadProfile()]);
   await screens.loadSavedSessions();
 }
 

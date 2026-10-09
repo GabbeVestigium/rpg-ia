@@ -37,6 +37,7 @@ def build_system_prompt(
     memory_summary: str = "",
     response_length: str = "medium",
     lore_entries=None,
+    profile=None,
 ) -> str:
     """Monta o system prompt completo: personagem + mundo + RPG + memória + regras."""
     world_context = ""
@@ -74,9 +75,13 @@ def build_system_prompt(
 - Mencione quests ativas quando relevante.
 - Você pode sugerir itens como recompensa quando fizer sentido narrativo."""
 
+    has_player = bool(rpg_state and rpg_state.player and rpg_state.player.name)
     player_name = "o jogador"
-    if rpg_state and rpg_state.player and rpg_state.player.name:
+    if has_player:
         player_name = rpg_state.player.name
+    elif profile and profile.name:
+        player_name = profile.name
+    profile_context = build_profile_context(profile, has_player)
 
     example = ""
     if getattr(character, "example_dialogue", ""):
@@ -113,7 +118,7 @@ def build_system_prompt(
 
 ## Contexto e cenário atual:
 {character.scenario}
-{example}{world_context}{mode_instructions}{rpg_context}{memory}
+{example}{world_context}{mode_instructions}{rpg_context}{profile_context}{memory}
 ## Regras do roleplay:
 {identity}
 - Escreva ações e narração entre *asteriscos* e as falas entre aspas.
@@ -124,6 +129,26 @@ def build_system_prompt(
   detalhe e imersão, sem cortar ou censurar. A história, os personagens e o drama vêm primeiro.
 - {length_rule}
 - Idioma: responda no mesmo idioma que o jogador usar."""
+
+
+def build_profile_context(profile, has_player: bool) -> str:
+    """
+    Quem é o jogador, vindo do perfil salvo. Se a história já criou um jogador (modo médio e
+    completo), nome, idade e aparência dele valem e o perfil só acrescenta o jeito de agir.
+    """
+    if not profile:
+        return ""
+    lines = []
+    if not has_player:
+        if profile.name:
+            lines.append(f"- Nome: {profile.name} ({profile.age} anos)")
+        if profile.appearance:
+            lines.append(f"- Aparência: {profile.appearance}")
+    if profile.about:
+        lines.append(f"- Jeito de agir e falar: {profile.about}")
+    if not lines:
+        return ""
+    return "\n## Sobre o jogador (a pessoa com quem você está falando):\n" + "\n".join(lines) + "\n"
 
 
 # ─── FILTRO DE RACIOCÍNIO ─────────────────────────────────────────────────────

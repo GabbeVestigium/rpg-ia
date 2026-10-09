@@ -3,7 +3,7 @@ Modelos Pydantic — estruturas de dados da aplicação.
 Pydantic valida automaticamente os tipos, o que evita bugs silenciosos.
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Any
 from enum import Enum
 
@@ -79,6 +79,28 @@ class EditMessageRequest(BaseModel):
     session_id: str
     index: int
     content: str = Field(min_length=1, max_length=8000)
+
+
+class PlayerProfile(BaseModel):
+    """Quem é você, em qualquer história. Vale também no modo Narrativo, que não cria jogador."""
+    name: str = Field(default="", max_length=40)
+    age: int = 25
+    appearance: str = Field(default="", max_length=400)
+    about: str = Field(default="", max_length=600)   # jeito de agir e falar, história, o que você gosta
+
+    @field_validator("age")
+    @classmethod
+    def _adult(cls, v: int) -> int:
+        from backend.safety import validate_age
+        validate_age(v, "jogador")
+        return v
+
+    @field_validator("name", "appearance", "about")
+    @classmethod
+    def _no_minor_markers(cls, v: str) -> str:
+        from backend.safety import validate_texts
+        validate_texts(v)
+        return v.strip()
 
 
 class SwipeRequest(BaseModel):

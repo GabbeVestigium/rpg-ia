@@ -32,10 +32,11 @@ def services():
 def reset_state(services):
     services.update({"chat_calls": [], "unloaded": 0, "txt2img_calls": [], "reply": None, "fail_chat": False})
     # Cada teste começa com configurações e sessões limpas.
-    from backend.config import SESSIONS_DIR, SETTINGS_FILE
+    from backend.config import PROFILE_FILE, SESSIONS_DIR, SETTINGS_FILE
     shutil.rmtree(SESSIONS_DIR, ignore_errors=True)
-    if os.path.exists(SETTINGS_FILE):
-        os.remove(SETTINGS_FILE)
+    for f in (SETTINGS_FILE, PROFILE_FILE):
+        if os.path.exists(f):
+            os.remove(f)
 
 
 @pytest.fixture()

@@ -37,7 +37,8 @@ async def prompt_size(character_id: str):
     if not character:
         raise HTTPException(404, "Personagem não encontrado")
     world = load_world(character.world_id) if character.world_id else None
-    prompt = build_system_prompt(character, world, RPGState())
+    from backend.profile_manager import load_profile
+    prompt = build_system_prompt(character, world, RPGState(), profile=load_profile())
     settings = get_settings()
     return {
         "tokens": est_tokens(prompt),

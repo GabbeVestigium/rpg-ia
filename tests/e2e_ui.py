@@ -154,10 +154,26 @@ try:
         check(page.locator(".char-card").count() == 4, "personagem novo aparece na galeria")
         page.screenshot(path=f"{SHOTS}/6-gallery.png")
 
+        # Perfil do jogador: menor de idade é recusado; salvo, já vem na criação do personagem
+        page.click("[data-action=open-profile]")
+        page.wait_for_selector("#profile-form input")
+        page.fill("#f-name", "Tonico Brasa")
+        page.fill("#f-age", "16")
+        page.click("[data-action=save-profile]")
+        page.wait_for_selector(".toast-error")
+        check("18" in page.inner_text(".toast-error"), "perfil com menos de 18 é recusado")
+        page.fill("#f-age", "29")
+        page.fill("#f-appearance", "alto, barba por fazer")
+        page.fill("#f-about", "Fala pouco e rói a unha quando mente.")
+        page.click("[data-action=save-profile]")
+        page.wait_for_selector("#modal-profile", state="hidden")
+
         # Modo completo
         page.click(".char-card:has-text(\"Trama\")")
         page.click('[data-mode="full"]')
         page.wait_for_selector("#screen-create.active")
+        check(page.input_value("#input-player-name") == "Tonico Brasa" and page.input_value("#input-player-age") == "29",
+              "criação do personagem já vem com o perfil")
         page.fill("#input-player-name", "Kael")
         page.click("#race-grid .option-btn >> nth=0")
         page.click("#class-grid .option-btn >> nth=0")

@@ -18,6 +18,7 @@ from backend.character_manager import load_character, load_world
 from backend.lorebook import select_lore
 from backend.memory import history_budget, prompt_window, update_summary, window_start
 from backend.models import ChatRequest, EditMessageRequest, MessageRole, RegenerateRequest, SwipeRequest
+from backend.profile_manager import load_profile
 from backend.ollama_client import OllamaError, build_system_prompt, stream_chat
 from backend.rpg_engine import (
     auto_relationship_delta, calculate_xp_reward, cast_delta, cast_targets, detect_risk_action,
@@ -134,6 +135,7 @@ async def _reply(session_id: str, character_id: str, user_text: Optional[str],
             memory_summary=session.summary if settings["memory_enabled"] else "",
             response_length=settings["response_length"],
             lore_entries=lore,
+            profile=load_profile(),
         )
 
         full = ""

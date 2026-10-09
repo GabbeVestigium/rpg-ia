@@ -155,9 +155,11 @@ function showCreateScreen(mode) {
   $('race-detail').style.display = 'none';
   $('class-detail').style.display = 'none';
   if (mode === 'full') updateAttrUI();
-  $('input-player-name').value = '';
-  $('input-player-age').value = '26';
-  $('input-appearance').value = '';
+  // Já vem preenchido com o seu perfil (dá para mudar só para esta história).
+  const prof = state.profile || {};
+  $('input-player-name').value = prof.name || '';
+  $('input-player-age').value = prof.age >= 18 ? String(prof.age) : '26';
+  $('input-appearance').value = prof.appearance || '';
   showScreen('screen-create');
 }
 
