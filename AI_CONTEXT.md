@@ -157,6 +157,9 @@ GET  /api/tts/status                     POST /api/tts  (Piper, devolve WAV)
 | `mesa-javali` | Mesa do Javali Cego | quermes | Personagem de grupo (`group: true`): isekai com harém, sete mulheres adultas de jeitos bem diferentes |
 | `trama` | Trama (Nanda Quaresma) | taquara | Netrunner de uma cidade cyberpunk brasileira, clima Cyberpunk 2077/Edgerunners, romance trágico |
 | `sibila` | Sibila | hiato | Dona da Casa no Hiato, dark fantasy e horror psicológico, tudo tem Preço |
+| `gilda` | Gilda Monteclaro | pedralva | Vampira dona de um bar numa cidade portuária, noir romântico e dívida |
+| `taina` | Tainá Kuaray | cinturao | Capitã de um cargueiro velho no Cinturão Vermelho, space opera suja e calorosa |
+| `leonor` | Duquesa Leonor de Valdoura | valdoura | Chefe dos espiões da coroa, intriga de corte e poder como sedução |
 
 Personagem de grupo: o narrador interpreta todo o elenco e marca quem fala com **Nome:** (ver `build_system_prompt`).
 Cada integrante fica em `cast` (id, nome, apelidos, relação inicial) e tem a própria relação com o jogador nos modos

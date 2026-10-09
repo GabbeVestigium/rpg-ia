@@ -50,7 +50,7 @@ try:
         page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
         page.goto("http://127.0.0.1:18000")
         page.wait_for_selector(".char-card")
-        check(page.locator(".char-card").count() == 3, "3 personagens listados")
+        check(page.locator(".char-card").count() == 6, "6 personagens listados")
         page.wait_for_function("document.getElementById('status-text').textContent.includes('fake-rp:8b')", timeout=5000)
         check("fake-rp:8b" in page.inner_text("#status-text"), "status mostra modelo ativo")
         page.screenshot(path=f"{SHOTS}/1-select.png")
@@ -177,7 +177,7 @@ try:
         page.click("[data-action=save-character]")
         page.wait_for_selector("#modal-editor", state="hidden")
         page.wait_for_selector(".char-card >> text=Teste")
-        check(page.locator(".char-card").count() == 5, "personagem novo aparece na galeria (e a Ana restaurada)")
+        check(page.locator(".char-card").count() == 8, "personagem novo aparece na galeria (e a Ana restaurada)")
         page.screenshot(path=f"{SHOTS}/6-gallery.png")
 
         # Perfil do jogador: menor de idade é recusado; salvo, já vem na criação do personagem

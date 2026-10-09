@@ -570,3 +570,21 @@ def test_chat_sends_mood_event_for_single_characters_only(client, services):
     sid = new_session(client, char="mesa-javali")
     events = sse_events(client.post("/api/chat", json={"session_id": sid, "character_id": "mesa-javali", "message": "Oi"}))
     assert not any(e["type"] == "mood" for e in events)                  # grupo não tem um rosto só
+
+
+def test_every_shipped_character_is_valid_adult_and_has_a_real_world(client):
+    ids = [c["id"] for c in client.get("/api/characters").json()]
+    assert set(ids) >= {"mesa-javali", "trama", "sibila", "gilda", "taina", "leonor"}
+    for cid in ids:
+        c = client.get(f"/api/characters/{cid}").json()
+        assert c["age"] >= 18 and c["first_message"] and c["summary"] and c["appearance_tags"], cid
+        for field in ("description", "personality", "scenario", "first_message", "example_dialogue"):
+            assert "\\n" not in c[field] and "—" not in c[field], (cid, field)       # sem barra-n literal nem travessão
+        world = client.get(f"/api/worlds/{c['world_id']}").json()
+        assert world["entries"], cid
+        size = client.get(f"/api/characters/{cid}/prompt-size").json()
+        assert size["history_left"] > 700, (cid, size)                               # nenhum personagem come o contexto todo
+        # cada ficha abre uma sessão e responde
+        sid = new_session(client, char=cid)
+        events = sse_events(client.post("/api/chat", json={"session_id": sid, "character_id": cid, "message": "Oi"}))
+        assert events[-1]["type"] == "done" and any(e["type"] == "token" for e in events), cid
