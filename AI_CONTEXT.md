@@ -127,6 +127,9 @@ GET  /api/tts/status                     POST /api/tts  (Piper, devolve WAV)
 - Voz: engine `browser` (Web Speech API, sem instalar nada) ou `piper` (CPU). Ler só falas ou tudo.
 - Livro de fatos por mundo (`World.entries`, `backend/lorebook.py`): entradas com palavras-chave entram no prompt só quando
   citadas nas últimas mensagens (máx. 5 entradas e 1400 caracteres). Mantenha `World.lore` curto e ponha o detalhe em entradas.
+- Inventário automático (`backend/inventory_ai.py`): depois da resposta (modos médio e completo), se o texto fala de itens ou
+  ouro, o modelo devolve um JSON do que mudou. É aplicado e guardado em `RPGState.last_inventory`, para desfazer e regenerar
+  reverterem. Eventos SSE depois do `done` (inventory) chegam com o chat já liberado. Limite: trocar de versão (◀ ▶) não mexe no inventário.
 - Galeria com criador/editor de personagem na interface.
 - Configurações na interface (modelo instalado, temperatura, min_p, contexto, tamanho da resposta...).
 - RPG: 3 modos (narrativo, médio, completo), d20 automático, XP, quests, relacionamento.

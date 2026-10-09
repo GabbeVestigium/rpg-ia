@@ -28,6 +28,9 @@ function fields(models, voices) {
     { key: 'history_turns', label: 'Turnos recentes enviados inteiros', type: 'number', min: 4, max: 60,
       hint: 'O que passar disso vira resumo. Menos turnos = mais rápido e menos VRAM.' },
 
+    { section: 'Inventário', key: 'auto_inventory', label: 'Atualizar o inventário conforme a história', type: 'checkbox',
+      hint: 'Quando a cena fala de itens ou ouro, o modelo confere o que você ganhou ou perdeu (modos Médio e Completo). Gasta uma geração curta a mais, só nessas cenas.' },
+
     { section: 'Imagens (Stable Diffusion)', key: 'sd_nsfw', label: 'Permitir imagens adultas (18+)', type: 'checkbox',
       hint: 'Só tira o filtro de nudez. Personagens continuam sempre adultos.' },
     { key: 'sd_steps', label: 'Passos de geração', type: 'number', min: 10, max: 60 },

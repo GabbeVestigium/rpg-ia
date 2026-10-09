@@ -26,6 +26,8 @@ http://127.0.0.1:8000 e abre o navegador. Ou use o `🎮 Iniciar RPG-IA.bat`.
   (ajustadas ao contexto) mais um resumo automático do resto. Você vê e edita o resumo em 🧠 Memória.
 - **Meu perfil** (👤 na tela inicial): seu nome, idade (18+), aparência e jeito de agir, salvos uma vez. Os personagens passam a
   conhecer você em qualquer história, até no modo Narrativo, e a criação do personagem já vem preenchida.
+- **Inventário que acompanha a história** (modos Médio e Completo): quando a cena entrega, tira ou cobra algo, o item ou o
+  ouro muda sozinho, com aviso na tela. Desfazer ou regenerar a troca reverte o item. Dá para desligar em ⚙️ Configurações.
 - **Exportar e backup**: 📄 baixa a conversa em texto; em ⚙️ Configurações dá para baixar um backup com tudo (conversas,
   personagens, imagens) e restaurar em outro PC. Restaurar nunca apaga nada e recusa personagens de menores.
 - **Livro de fatos** (📚 Fatos): detalhes do mundo (lugares, grupos, regras) que só entram na conversa quando você os cita.

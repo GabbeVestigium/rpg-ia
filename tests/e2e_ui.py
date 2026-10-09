@@ -202,11 +202,21 @@ try:
         check(page.inner_text("#player-title").lower() == "kael", "jogador criado no modo completo")
         page.screenshot(path=f"{SHOTS}/7-full.png")
 
+        # Inventário automático: a história entrega um item e ele aparece na lateral (modo completo)
+        page.evaluate("fetch('/api/settings',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({auto_inventory:true})})")
+        page.fill("#user-input", "Pego a chave que ela me entrega")
+        page.keyboard.press("Enter")
+        page.wait_for_selector(".message.assistant[data-index='2'] .bubble:not(.typing-cursor)", timeout=40000)
+        check(not page.is_disabled("#user-input"), "chat liberado ao fim da resposta")
+        page.wait_for_selector(".toast:has-text('Inventário')")
+        page.wait_for_selector("#inventory-list .inventory-item:has-text('Chave enferrujada')")
+        check(True, "item dado pela história aparece no inventário")
+
         # Rolagem automática: o dado aparece e a resposta continua depois dele
         page.fill("#user-input", "Eu ataco o goblin com minha espada")
         page.keyboard.press("Enter")
-        page.wait_for_selector(".message.assistant[data-index='2'] .bubble:not(.typing-cursor)", timeout=40000)
-        check("Olá, viajante" in page.inner_text(".message.assistant[data-index='2'] .bubble"),
+        page.wait_for_selector(".message.assistant[data-index='4'] .bubble:not(.typing-cursor)", timeout=40000)
+        check("Olá, viajante" in page.inner_text(".message.assistant[data-index='4'] .bubble"),
               "resposta chega depois da animação do dado")
 
         # Personagem de grupo no modo médio: uma barra por integrante do elenco

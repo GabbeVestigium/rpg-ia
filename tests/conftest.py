@@ -30,7 +30,8 @@ def services():
 
 @pytest.fixture(autouse=True)
 def reset_state(services):
-    services.update({"chat_calls": [], "unloaded": 0, "txt2img_calls": [], "reply": None, "fail_chat": False})
+    services.update({"chat_calls": [], "unloaded": 0, "txt2img_calls": [], "reply": None, "fail_chat": False,
+                    "inventory_reply": '{"gain":[],"lose":[],"gold":0}'})
     # Cada teste começa com configurações e sessões limpas.
     from backend.config import PROFILE_FILE, SESSIONS_DIR, SETTINGS_FILE
     shutil.rmtree(SESSIONS_DIR, ignore_errors=True)

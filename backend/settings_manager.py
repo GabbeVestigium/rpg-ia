@@ -29,6 +29,8 @@ _SCHEMA: Dict[str, dict] = {
     # Memória
     "history_turns":       {"default": 12,    "type": int,   "min": 4, "max": 60},
     "memory_enabled":      {"default": True,  "type": bool},
+    # Inventário
+    "auto_inventory":      {"default": True,  "type": bool},
     # Imagens
     "sd_nsfw":             {"default": False, "type": bool},
     "sd_steps":            {"default": 28,    "type": int,   "min": 10, "max": 60},

@@ -137,3 +137,37 @@ def test_lorebook_always_entries_are_included_without_keys():
                LoreEntry(name="Cova", keys=["cova"], text="ruínas"))
     assert [e.name for e in select_lore(w, ["nada a ver"])] == ["Regra"]
     assert [e.name for e in select_lore(w, ["a cova"])] == ["Regra", "Cova"]
+
+
+def test_inventory_parse_is_robust_and_capped():
+    from backend.inventory_ai import parse_changes
+    ok = parse_changes('Claro! {"gain":[{"name":" Chave enferrujada. ","qty":"2","type":"KEY"}],"lose":[],"gold":-5} pronto')
+    assert ok == {"gain": [{"name": "Chave enferrujada", "qty": 2, "type": "key"}], "lose": [], "gold": -5}
+    assert parse_changes("sem json nenhum") == {"gain": [], "lose": [], "gold": 0}
+    assert parse_changes("{quebrado") == {"gain": [], "lose": [], "gold": 0}
+    big = parse_changes('{"gain":[' + ",".join('{"name":"i%d"}' % i for i in range(9)) + '],"gold":99999}')
+    assert len(big["gain"]) == 3 and big["gold"] == 500                      # limites por troca
+    assert parse_changes('{"gain":[{"name":"x","qty":9999,"type":"bomba"}]}')["gain"][0] == {"name": "x", "qty": 20, "type": "misc"}
+
+
+def test_inventory_apply_revert_and_describe():
+    from backend.inventory_ai import apply_changes, describe, revert_changes
+    from backend.rpg_models import Inventory, Item
+    inv = Inventory(items=[Item(name="Poção de cura", quantity=2)], gold=10)
+    done = apply_changes(inv, {"gain": [{"name": "Chave", "qty": 1, "type": "key"}],
+                               "lose": [{"name": "poção", "qty": 1}, {"name": "Espada que não tenho", "qty": 1}],
+                               "gold": -50})
+    assert [i.name for i in inv.items] == ["Poção de cura", "Chave"] and inv.items[0].quantity == 1
+    assert inv.gold == 0 and done["gold"] == -10                              # ouro nunca fica negativo
+    assert done["lose"] == [{"name": "Poção de cura", "qty": 1, "type": "misc"}]  # item que não existe é ignorado
+    assert describe(done) == ["+ Chave", "- Poção de cura", "-10 ouro"]
+    revert_changes(inv, done)
+    assert {i.name: i.quantity for i in inv.items} == {"Poção de cura": 2} and inv.gold == 10
+    assert apply_changes(inv, {"gain": [], "lose": [], "gold": 0}) is None
+
+
+def test_inventory_trigger_prefilter():
+    from backend.inventory_ai import looks_like_item_change
+    assert looks_like_item_change("Ela te entrega uma chave", "") and looks_like_item_change("", "eu pego a espada")
+    assert looks_like_item_change("Você recebeu 20 moedas", "")
+    assert not looks_like_item_change("O vento sopra na torre.", "Oi, tudo bem?")

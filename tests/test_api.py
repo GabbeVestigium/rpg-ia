@@ -452,3 +452,70 @@ def test_restore_rejects_dangerous_or_underage_entries(client):
     assert client.get("/api/characters/ana").status_code == 200
     assert client.get("/api/characters/mini").status_code == 404
     assert client.post("/api/backup/restore", files={"file": ("b.zip", b"nao e zip")}).status_code == 400
+
+
+def _medium_session(client, char="trama"):
+    sid = new_session(client, char=char, mode="medium")
+    client.post("/api/player/create", json={"session_id": sid, "name": "Kael", "race": "humano",
+                                            "char_class": "bardo", "mode": "medium", "age": 30})
+    return sid
+
+
+def _inventory(client, sid):
+    inv = client.get(f"/api/player/{sid}").json()["player"]["inventory"]
+    return {i["name"]: i["quantity"] for i in inv["items"]}, inv["gold"]
+
+
+def _inventory_calls(services):
+    return [c for c in services["chat_calls"] if "inventário de um jogo" in c["messages"][0]["content"]]
+
+
+def test_inventory_follows_the_story_and_sends_event_after_done(client, services):
+    sid = _medium_session(client)
+    items0, gold0 = _inventory(client, sid)
+    services["inventory_reply"] = '{"gain":[{"name":"Chave enferrujada","qty":1,"type":"key"}],"lose":[],"gold":-5}'
+    r = client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": "Pego a chave que ela me entrega"})
+    types = [e["type"] for e in sse_events(r)]
+    assert types.index("done") < types.index("inventory")                    # chat liberado antes do extra
+    ev = [e for e in sse_events(r) if e["type"] == "inventory"][0]
+    assert ev["changes"] == ["+ Chave enferrujada", "-5 ouro"]
+    items, gold = _inventory(client, sid)
+    assert items["Chave enferrujada"] == 1 and gold == gold0 - 5
+
+
+def test_inventory_is_reverted_on_undo_and_redone_on_regenerate(client, services):
+    sid = _medium_session(client)
+    items0, gold0 = _inventory(client, sid)
+    services["inventory_reply"] = '{"gain":[{"name":"Chave","qty":1,"type":"key"}],"lose":[],"gold":0}'
+    client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": "Pego a chave"})
+    assert _inventory(client, sid)[0]["Chave"] == 1
+
+    client.post("/api/chat/regenerate", json={"session_id": sid, "character_id": "trama"})
+    assert _inventory(client, sid)[0]["Chave"] == 1                           # desfez e refez: não duplicou
+
+    client.post("/api/chat/undo", json={"session_id": sid, "character_id": "trama"})
+    assert _inventory(client, sid) == (items0, gold0)                         # desfazer devolve tudo ao que era
+
+
+def test_inventory_skips_calls_when_text_has_no_item_words_or_mode_or_setting(client, services):
+    sid = _medium_session(client)
+    client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": "Oi, tudo bem?"})
+    assert _inventory_calls(services) == []                                   # sem palavras de item: sem chamada extra
+
+    narrative = new_session(client, char="trama", mode="narrative")
+    client.post("/api/chat", json={"session_id": narrative, "character_id": "trama", "message": "Pego a chave"})
+    assert _inventory_calls(services) == []                                   # modo narrativo não tem inventário
+
+    client.put("/api/settings", json={"auto_inventory": False})
+    client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": "Pego a chave"})
+    assert _inventory_calls(services) == []                                   # desligado nas configurações
+
+
+def test_old_exchange_inventory_is_not_reverted_by_undoing_a_newer_one(client, services):
+    sid = _medium_session(client)
+    services["inventory_reply"] = '{"gain":[{"name":"Chave","qty":1,"type":"key"}],"lose":[],"gold":0}'
+    client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": "Pego a chave"})
+    services["inventory_reply"] = '{"gain":[],"lose":[],"gold":0}'
+    client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": "Oi, de novo"})
+    client.post("/api/chat/undo", json={"session_id": sid, "character_id": "trama"})
+    assert _inventory(client, sid)[0]["Chave"] == 1                           # a chave da troca antiga continua

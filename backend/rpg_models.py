@@ -239,6 +239,8 @@ class RPGState(BaseModel):
     player: Optional[PlayerStats] = None
     # Relação do jogador com cada integrante do elenco (só personagens de grupo)
     cast_relations: Dict[str, Relationship] = {}
+    # O que a última resposta mudou no inventário, para desfazer junto com a troca
+    last_inventory: Optional[Dict] = None
     # Log de eventos importantes (rolagens, level ups, etc.)
     event_log: List[str] = []
 

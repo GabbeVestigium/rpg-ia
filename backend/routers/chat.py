@@ -15,6 +15,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 
 from backend.character_manager import load_character, load_world
+from backend.inventory_ai import apply_changes, describe, extract_changes, looks_like_item_change, revert_changes
 from backend.lorebook import select_lore
 from backend.memory import history_budget, prompt_window, update_summary, window_start
 from backend.models import ChatRequest, EditMessageRequest, MessageRole, RegenerateRequest, SwipeRequest
@@ -74,6 +75,17 @@ def _auto_roll(rpg, text: str) -> Optional[dict]:
     return {"result": result, "event": event}
 
 
+def _revert_inventory(session) -> None:
+    """Desfaz no inventário o que a última resposta tinha dado ou tirado (se for o caso)."""
+    rpg = get_rpg_state(session)
+    if rpg.player and rpg.last_inventory:
+        revert_changes(rpg.player.inventory, rpg.last_inventory)
+        rpg.event_log.append("Inventário revertido (troca refeita)")
+    rpg.last_inventory = None
+    session.rpg_state = rpg
+    save_session(session)
+
+
 def _streaming(generator: AsyncIterator[str]) -> StreamingResponse:
     return StreamingResponse(
         generator, media_type="text/event-stream",
@@ -119,6 +131,7 @@ async def _reply(session_id: str, character_id: str, user_text: Optional[str],
                     if delta:
                         rpg.player.relationship.set_score(rpg.player.relationship.score + delta)
             rpg.event_log = rpg.event_log[-50:]
+            rpg.last_inventory = None  # a troca anterior já ficou firme: desfazer só mexe na nova
             session.rpg_state = rpg
             clear_swipes(session)  # mensagem nova: as versões da resposta anterior deixam de valer
             add_message(session, MessageRole.USER, stored)
@@ -168,6 +181,22 @@ async def _reply(session_id: str, character_id: str, user_text: Optional[str],
 
         if completed and text:
             yield _sse({"type": "done"})
+            # O que vem depois do "done" roda com o chat já liberado para o jogador.
+            if (settings["auto_inventory"] and rpg.mode != GameMode.NARRATIVE and rpg.player
+                    and (user_text is not None or regen)):
+                last_user = next((m.content for m in reversed(session.history[:-1])
+                                  if m.role == MessageRole.USER), "")
+                try:
+                    if looks_like_item_change(text, last_user):
+                        done = apply_changes(rpg.player.inventory, await extract_changes(last_user, text))
+                        if done:
+                            rpg.last_inventory = done
+                            rpg.event_log.append("Inventário: " + ", ".join(describe(done)))
+                            session.rpg_state = rpg
+                            save_session(session)
+                            yield _sse({"type": "inventory", "changes": describe(done)})
+                except Exception:
+                    pass  # o inventário automático é um extra; nunca deve quebrar o chat
             try:
                 keep_from = window_start(session, history_budget(system_prompt))
                 await update_summary(session, character.name, keep_from)
@@ -192,6 +221,7 @@ async def regenerate(req: RegenerateRequest):
         if not session or len(session.history) < 2:
             raise HTTPException(400, "Não há resposta para regenerar")
         if session.history[-1].role == MessageRole.ASSISTANT:
+            _revert_inventory(session)  # a troca será refeita, então o que ela deu/tirou é desfeito
             start_swipes(session)  # a resposta atual vira a versão 1
             pop_last_assistant(session)
     return _streaming(_reply(req.session_id, req.character_id, None, regen=True))
@@ -219,6 +249,8 @@ async def undo(req: RegenerateRequest):
     _require(req.session_id, req.character_id)
     async with session_lock(req.session_id):
         session = load_session(req.session_id)
+        if session:
+            _revert_inventory(session)
         user_text = pop_last_exchange(session) if session else None
     if user_text is None:
         raise HTTPException(400, "Nada para desfazer")

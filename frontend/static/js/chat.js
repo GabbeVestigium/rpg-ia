@@ -56,36 +56,52 @@ async function runReply(path, body) {
 
   let bubble = null;
   let full = '';
+  let finish;
+  const finished = new Promise((resolve) => { finish = resolve; });
 
-  try {
-    await streamSSE(path, body, async (evt) => {
-      if (evt.type === 'roll') {
+  // A conexão fica aberta um pouco depois do "done" (resumo da memória, inventário), então o chat
+  // é liberado no "done" e o resto chega em segundo plano.
+  streamSSE(path, body, async (evt) => {
+    if (evt.type === 'roll') {
+      removeTypingIndicator();
+      await new Promise((resolve) => window.showDiceRoll(evt.result, resolve));
+      showTypingIndicator();
+    } else if (evt.type === 'token') {
+      if (!bubble) {
         removeTypingIndicator();
-        await new Promise((resolve) => window.showDiceRoll(evt.result, resolve));
-        showTypingIndicator();
-      } else if (evt.type === 'token') {
-        if (!bubble) {
-          removeTypingIndicator();
-          const div = appendMessage('assistant', '', state.history.length);
-          bubble = div.querySelector('.bubble');
-          bubble.classList.add('typing-cursor');
-        }
-        full += evt.t;
-        bubble.innerHTML = formatText(full);
-        scrollToBottom();
-      } else if (evt.type === 'error') {
-        toast(evt.message, 'error', 8000);
+        const div = appendMessage('assistant', '', state.history.length);
+        bubble = div.querySelector('.bubble');
+        bubble.classList.add('typing-cursor');
       }
-    }, controller.signal);
-  } catch (e) {
-    if (e.name !== 'AbortError') toast(e.message, 'error', 8000);
-  } finally {
-    removeTypingIndicator();
-    bubble?.classList.remove('typing-cursor');
-    state.abort = null;
-    setStreaming(false);
-  }
+      full += evt.t;
+      bubble.innerHTML = formatText(full);
+      scrollToBottom();
+    } else if (evt.type === 'error') {
+      toast(evt.message, 'error', 8000);
+    } else if (evt.type === 'inventory') {
+      onInventory(evt.changes);
+    } else if (evt.type === 'done') {
+      finish();
+    }
+  }, controller.signal)
+    .catch((e) => { if (e.name !== 'AbortError') toast(e.message, 'error', 8000); })
+    .finally(finish);
+
+  await finished;
+  removeTypingIndicator();
+  bubble?.classList.remove('typing-cursor');
+  if (state.abort === controller) state.abort = null;
+  setStreaming(false);
   return full.trim();
+}
+
+/** Itens que a história deu ou tirou: avisa e atualiza a lateral. */
+async function onInventory(changes) {
+  toast(`Inventário: ${changes.join(', ')}`, 'info', 6000);
+  try {
+    const data = await api(`/api/player/${state.session}`);
+    if (data.player) updateSidebar(data.player, state.mode);
+  } catch { /* a próxima atualização corrige */ }
 }
 
 export async function sendMessage() {
