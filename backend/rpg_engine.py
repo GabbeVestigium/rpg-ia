@@ -15,7 +15,7 @@ import re
 from typing import Optional, Tuple
 from backend.rpg_models import (
     PlayerStats, Attributes, RPGState, GameMode,
-    RACES, CLASSES, Item, Quest, QuestStatus
+    RACES, CLASSES, Item, QuestStatus
 )
 
 
@@ -230,7 +230,7 @@ def get_roll_modifier(player: PlayerStats, attribute: str) -> int:
 
 # ─── CONTEXTO RPG PARA O MODELO ───────────────────────────────────────────────
 
-def build_rpg_context(state: RPGState) -> str:
+def build_rpg_context(state: RPGState, include_relationship: bool = True) -> str:
     """
     Monta o bloco de contexto RPG que vai no system prompt.
     O modelo usa isso para calibrar respostas — sabe o nível do jogador,
@@ -248,10 +248,11 @@ def build_rpg_context(state: RPGState) -> str:
     if p.appearance:
         lines.append(f"- Aparência: {p.appearance}")
 
-    # Relacionamento
-    rel = p.relationship
-    lines.append(f"- Relacionamento com você: {rel.score}/100 ({rel.label})")
-    lines.append(f"  Trate o jogador de acordo com esse nível. {_relationship_guidance(rel.score)}")
+    # Relacionamento (personagens de grupo têm um medidor por integrante, ver build_cast_context)
+    if include_relationship:
+        rel = p.relationship
+        lines.append(f"- Relacionamento com você: {rel.score}/100 ({rel.label})")
+        lines.append(f"  Trate o jogador de acordo com esse nível. {_relationship_guidance(rel.score)}")
 
     if state.mode == GameMode.FULL and p.attributes:
         # HP
@@ -280,6 +281,18 @@ def build_rpg_context(state: RPGState) -> str:
     if state.event_log:
         lines.append(f"- Evento recente: {state.event_log[-1]}")
 
+    return "\n".join(lines)
+
+
+def build_cast_context(cast, relations) -> str:
+    """Bloco do prompt com como cada integrante do elenco se sente em relação ao jogador."""
+    if not cast or not relations:
+        return ""
+    lines = ["\n## Como cada uma se sente em relação ao jogador (cada uma age de acordo, sem sair da própria personalidade):"]
+    for m in cast:
+        rel = relations.get(m.id)
+        if rel:
+            lines.append(f"- {m.name}: {rel.score}/100 ({rel.label}). {_relationship_guidance(rel.score)}")
     return "\n".join(lines)
 
 
@@ -327,3 +340,60 @@ def auto_relationship_delta(message: str) -> int:
     for n in negative:
         if re.search(n, text): score -= 3
     return max(-10, min(10, score))
+
+
+# ─── ELENCO (personagens de grupo) ────────────────────────────────────────────
+
+def _fold(text: str) -> str:
+    """Minúsculas e sem acento, para casar 'Yasmin' com 'yasmin'."""
+    import unicodedata
+    return unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode().lower()
+
+
+def match_cast(message: str, cast) -> list:
+    """Ids dos integrantes citados pelo nome ou apelido na mensagem do jogador."""
+    text = _fold(message)
+    found = []
+    for m in cast:
+        for name in [m.name, *m.aliases]:
+            if name and re.search(rf"\b{re.escape(_fold(name))}\b", text):
+                found.append(m.id)
+                break
+    return found
+
+
+def last_speaker(text: str, cast) -> Optional[str]:
+    """Id de quem falou por último numa resposta (marcada como **Nome:**)."""
+    by_name = {_fold(m.name): m.id for m in cast}
+    speakers = re.findall(r"\*\*([^*:]{1,40}):\*\*", text)
+    for name in reversed(speakers):
+        folded = _fold(name)
+        for key, cid in by_name.items():
+            if key in folded:
+                return cid
+    return None
+
+
+def cast_targets(message: str, previous_reply: str, cast) -> list:
+    """Quem recebe o efeito da mensagem: os citados, ou senão quem acabou de falar."""
+    named = match_cast(message, cast)
+    if named:
+        return named
+    speaker = last_speaker(previous_reply, cast)
+    return [speaker] if speaker else []
+
+
+def cast_delta(message: str) -> int:
+    """Efeito de uma mensagem sobre a relação: o tom das palavras, mais 1 só por dar atenção."""
+    return max(-10, min(10, auto_relationship_delta(message) + 1))
+
+
+def cast_summary(cast, relations) -> list:
+    """Lista para a interface: um item por integrante, com nota e rótulo."""
+    out = []
+    for m in cast:
+        rel = relations.get(m.id)
+        if rel:
+            out.append({"id": m.id, "name": m.name, "score": rel.score,
+                        "label": rel.label, "color": rel.color})
+    return out

@@ -1,3 +1,7 @@
+> **Nota:** este arquivo é o histórico das primeiras versões (v1 e v2). A arquitetura atual (v3: routers,
+> módulos ES, memória, cenas, voz, personagens de grupo) está descrita em `AI_CONTEXT.md` e no `README.md`.
+> Nomes de arquivos e rotas abaixo (como `frontend/static/js/app.js`) podem não existir mais.
+
 # Histórico de Desenvolvimento — RPG-IA
 
 ## Visão Geral
@@ -331,7 +335,7 @@ location.reload();
 
 ### Hardware do Usuário
 - **GPU:** NVIDIA GeForce GTX 1660
-- **VRAM:** 4GB
+- **VRAM:** 6GB
 - **RAM:** 16GB
 - **Conclusão:** SD é viável com otimizações
 
@@ -347,7 +351,7 @@ location.reload();
    - `generate_image(prompt, negative_prompt, settings)` - Chama API do SD
    - `generate_character_portrait(char_id, ...)` - Função principal com cache
    
-   **Configurações otimizadas para GTX 1660 (4GB VRAM):**
+   **Configurações otimizadas para GTX 1660 (6GB VRAM):**
    ```python
    DEFAULT_SETTINGS = {
        "width": 512,
@@ -409,7 +413,7 @@ frontend/static/images/characters/
 
 **Flags importantes:**
 - `--api` - Habilita REST API (porta 7860)
-- `--medvram` - Otimiza para GPUs com 4GB VRAM
+- `--medvram` - Otimiza para GPUs com 4 a 6GB de VRAM
 - `--xformers` - Acelera geração em ~30%
 
 ### Prompts e Qualidade
@@ -489,7 +493,7 @@ tools/rpg-ia/
 
 ### Status: 100% CONCLUÍDO
 
-**Objetivo:** Sistema de geração de retratos de personagens via Stable Diffusion, otimizado para GTX 1660 (4GB VRAM), com suporte a conteúdo +18.
+**Objetivo:** Sistema de geração de retratos de personagens via Stable Diffusion, otimizado para GTX 1660 (6GB VRAM), com suporte a conteúdo +18.
 
 ### Arquivos Criados/Modificados
 
@@ -599,7 +603,7 @@ DELETE /api/sd/delete-portrait/{char_id} # Deleta para regenerar
 
 ✅ Geração de retratos personalizados  
 ✅ Cache automático (performance)  
-✅ Otimizado para GTX 1660 (4GB VRAM)  
+✅ Otimizado para GTX 1660 (6GB VRAM)  
 ✅ Suporte NSFW (nsfw=true por padrão)  
 ✅ Loading visual (spinner + texto)  
 ✅ Tratamento de erros (SD offline, timeout)  

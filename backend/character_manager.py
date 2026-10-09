@@ -1,76 +1,168 @@
 """
-Gerenciador de personagens e mundos.
+Gerenciador de personagens e mundos (arquivos JSON em data/).
+
+Todo personagem salvo passa por validação de adulto (18+), ver safety.py.
 """
 
-import json
 import os
-from typing import Optional, List
-from backend.models import Character, World
-from backend.config import CHARACTERS_DIR, WORLDS_DIR
+from typing import List, Optional
 
+from pydantic import ValidationError
+
+from backend.config import CHARACTERS_DIR, WORLDS_DIR, PORTRAITS_DIR
+from backend.models import Character, World
+from backend.safety import validate_age, validate_texts
+from backend.storage import is_safe_id, read_json, slugify, write_json_atomic
+
+
+def _char_path(character_id: str) -> str:
+    return os.path.join(CHARACTERS_DIR, f"{character_id}.json")
+
+
+def _world_path(world_id: str) -> str:
+    return os.path.join(WORLDS_DIR, f"{world_id}.json")
+
+
+def _shorten(text: str, limit: int) -> str:
+    text = text.strip()
+    if len(text) <= limit:
+        return text
+    cut = text[:limit].rsplit(" ", 1)[0].rstrip(",;:")
+    return cut + "..."
+
+
+def _auto_summary(description: str) -> str:
+    """Resumo automático para cards: primeira frase, sem marcação markdown."""
+    import re
+    plain = re.sub(r"[*_#>`]", "", description).replace("\n", " ").strip()
+    first = re.split(r"(?<=[.!?])\s", plain, maxsplit=1)[0]
+    return _shorten(first, 180)
+
+
+# ─── PERSONAGENS ──────────────────────────────────────────────────────────────
 
 def load_character(character_id: str) -> Optional[Character]:
-    path = os.path.join(CHARACTERS_DIR, f"{character_id}.json")
-    if not os.path.exists(path):
+    if not is_safe_id(character_id):
+        return None
+    data = read_json(_char_path(character_id))
+    if not isinstance(data, dict):
         return None
     try:
-        with open(path, "r", encoding="utf-8") as f:
-            return Character(**json.load(f))
-    except (json.JSONDecodeError, Exception):
+        return Character(**data)
+    except ValidationError:
         return None
 
 
-def load_world(world_id: str) -> Optional[World]:
-    path = os.path.join(WORLDS_DIR, f"{world_id}.json")
+def validate_character(character: Character) -> None:
+    """Levanta ValueError se o personagem não cumprir a regra 18+."""
+    validate_age(character.age, "personagem")
+    validate_texts(
+        character.name, character.description, character.personality,
+        character.scenario, character.first_message, character.example_dialogue,
+        character.appearance_tags, " ".join(character.tags),
+    )
+
+
+def save_character(character: Character) -> Character:
+    if not is_safe_id(character.id):
+        raise ValueError("id do personagem inválido")
+    validate_character(character)
+    write_json_atomic(_char_path(character.id), character.model_dump(mode="json"))
+    return character
+
+
+def remove_portrait_files(character_id: str) -> None:
+    """Apaga o retrato, as expressões (id__feliz.png...) e a semente do personagem."""
+    if not os.path.isdir(PORTRAITS_DIR):
+        return
+    for name in os.listdir(PORTRAITS_DIR):
+        if name in (f"{character_id}.png", f"{character_id}.meta.json") or (
+                name.startswith(f"{character_id}__") and name.endswith(".png")):
+            os.remove(os.path.join(PORTRAITS_DIR, name))
+
+
+def delete_character(character_id: str) -> bool:
+    if not is_safe_id(character_id):
+        return False
+    path = _char_path(character_id)
     if not os.path.exists(path):
-        return None
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            return World(**json.load(f))
-    except (json.JSONDecodeError, Exception):
-        return None
+        return False
+    os.remove(path)
+    remove_portrait_files(character_id)
+    return True
 
 
 def list_characters() -> List[dict]:
     os.makedirs(CHARACTERS_DIR, exist_ok=True)
     characters = []
-    for fname in os.listdir(CHARACTERS_DIR):
+    for fname in sorted(os.listdir(CHARACTERS_DIR)):
         if not fname.endswith(".json"):
             continue
-        path = os.path.join(CHARACTERS_DIR, fname)
+        data = read_json(os.path.join(CHARACTERS_DIR, fname))
+        if not isinstance(data, dict):
+            continue
         try:
-            with open(path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            characters.append({
-                "id":          data["id"],
-                "name":        data["name"],
-                "world_id":    data.get("world_id", ""),
-                "description": data["description"],
-                "scenario":    data.get("scenario", ""),
-                "avatar_emoji":data.get("avatar_emoji", "👤"),
-                "tags":        data.get("tags", [])
-            })
-        except Exception:
-            continue  # ignora arquivo corrompido, continua listando os demais
+            c = Character(**data)
+        except ValidationError:
+            continue
+        characters.append({
+            "id":           c.id,
+            "name":         c.name,
+            "world_id":     c.world_id,
+            "age":          c.age,
+            "summary":      c.summary or _auto_summary(c.description),
+            "scenario":     _shorten(c.scenario, 200),
+            "avatar_emoji": c.avatar_emoji,
+            "group":        c.group,
+            "tags":         c.tags,
+            "has_portrait": os.path.exists(os.path.join(PORTRAITS_DIR, f"{c.id}.png")),
+        })
     return characters
+
+
+# ─── MUNDOS ───────────────────────────────────────────────────────────────────
+
+def load_world(world_id: str) -> Optional[World]:
+    if not world_id or not is_safe_id(world_id):
+        return None
+    data = read_json(_world_path(world_id))
+    if not isinstance(data, dict):
+        return None
+    try:
+        return World(**data)
+    except ValidationError:
+        return None
+
+
+def save_world(world: World) -> World:
+    if not is_safe_id(world.id):
+        raise ValueError("id do mundo inválido")
+    validate_texts(world.name, world.description, world.lore)
+    for i, entry in enumerate(world.entries):
+        validate_texts(entry.name, entry.text, " ".join(entry.keys))
+        entry.id = entry.id or f"{slugify(entry.name)}-{i + 1}"
+    write_json_atomic(_world_path(world.id), world.model_dump(mode="json"))
+    return world
 
 
 def list_worlds() -> List[dict]:
     os.makedirs(WORLDS_DIR, exist_ok=True)
     worlds = []
-    for fname in os.listdir(WORLDS_DIR):
+    for fname in sorted(os.listdir(WORLDS_DIR)):
         if not fname.endswith(".json"):
             continue
-        path = os.path.join(WORLDS_DIR, fname)
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            worlds.append({
-                "id":          data["id"],
-                "name":        data["name"],
-                "genre":       data.get("genre", ""),
-                "description": data["description"][:120] + "..."
-            })
-        except Exception:
+        data = read_json(os.path.join(WORLDS_DIR, fname))
+        if not isinstance(data, dict):
             continue
+        try:
+            w = World(**data)
+        except ValidationError:
+            continue
+        desc = w.description
+        worlds.append({
+            "id":          w.id,
+            "name":        w.name,
+            "genre":       w.genre,
+            "description": desc if len(desc) <= 120 else desc[:120] + "...",
+        })
     return worlds
