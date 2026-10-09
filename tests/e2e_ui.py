@@ -111,6 +111,12 @@ try:
         check(True, "cena gerada e exibida")
         page.screenshot(path=f"{SHOTS}/4-scene.png")
 
+        # Exportar a conversa baixa um arquivo de texto com a conversa
+        with page.expect_download() as dl:
+            page.click("[data-action=export-chat]")
+        check(dl.value.suggested_filename.startswith("conversa-") and dl.value.suggested_filename.endswith(".md"),
+              "exportar conversa baixa um .md")
+
         # Memória
         page.click("[data-action=open-memory]")
         page.wait_for_selector("#modal-memory", state="visible")
@@ -130,6 +136,15 @@ try:
         page.click("#screen-chat [data-action=open-settings]")
         page.wait_for_selector("#settings-form input")
         page.screenshot(path=f"{SHOTS}/5-settings.png", full_page=False)
+        # Restaurar um backup (um zip pequeno com um personagem novo) mantém o que já existia
+        import io, json as _json, zipfile as _zip
+        _buf = io.BytesIO()
+        with _zip.ZipFile(_buf, "w") as _z:
+            _z.writestr("characters/ana.json", _json.dumps({"id": "ana", "name": "Ana Restaurada", "age": 30,
+                "description": "d", "personality": "p", "scenario": "s", "first_message": "oi"}))
+        page.set_input_files("#backup-file", files=[{"name": "b.zip", "mimeType": "application/zip", "buffer": _buf.getvalue()}])
+        page.wait_for_selector(".toast:has-text('Backup restaurado')")
+        check(True, "restaurar backup mostra o resultado")
         page.fill("#f-num_predict", "500")
         page.click("[data-action=save-settings]")
         page.wait_for_selector("#modal-settings", state="hidden")
@@ -151,7 +166,7 @@ try:
         page.click("[data-action=save-character]")
         page.wait_for_selector("#modal-editor", state="hidden")
         page.wait_for_selector(".char-card >> text=Teste")
-        check(page.locator(".char-card").count() == 4, "personagem novo aparece na galeria")
+        check(page.locator(".char-card").count() == 5, "personagem novo aparece na galeria (e a Ana restaurada)")
         page.screenshot(path=f"{SHOTS}/6-gallery.png")
 
         # Perfil do jogador: menor de idade é recusado; salvo, já vem na criação do personagem

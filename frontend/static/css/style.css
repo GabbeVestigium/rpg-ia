@@ -549,3 +549,6 @@ textarea#user-input::placeholder{color:var(--text3);}
 .lore-row textarea{resize:vertical;line-height:1.5;}
 .lore-always{font-size:0.78rem;color:var(--text2);white-space:nowrap;display:flex;gap:4px;align-items:center;}
 .lore-name{font-weight:600;}
+
+.backup-actions{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 4px;}
+.backup-actions a,.backup-file{text-decoration:none;cursor:pointer;display:inline-block;}

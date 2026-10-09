@@ -19,7 +19,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from backend.config import FRONTEND_DIR, HOST, PORT, PORTRAITS_DIR, SCENES_DIR
-from backend.routers import characters, chat, images, sessions, system
+from backend.routers import characters, chat, data, images, sessions, system
 
 class NoCacheStatic(StaticFiles):
     """Arquivos do frontend sempre revalidados: depois de um git pull, o navegador não serve JS antigo."""
@@ -39,7 +39,7 @@ os.makedirs(SCENES_DIR, exist_ok=True)
 app.mount("/static", NoCacheStatic(directory=os.path.join(FRONTEND_DIR, "static")), name="static")
 app.mount("/scenes", StaticFiles(directory=SCENES_DIR), name="scenes")
 
-for module in (system, characters, sessions, chat, images):
+for module in (system, characters, sessions, chat, images, data):
     app.include_router(module.router)
 
 

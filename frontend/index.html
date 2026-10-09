@@ -178,6 +178,7 @@
           <span id="topbar-session" class="topbar-session"></span>
         </div>
         <button class="btn-secondary-sm" data-action="generate-scene" id="btn-scene" title="Gerar imagem da cena atual">🖼️ Cena</button>
+        <button class="btn-secondary-sm" data-action="export-chat" title="Baixar esta conversa em texto">📄 Exportar</button>
         <button class="btn-secondary-sm" data-action="open-lore" title="Fatos do mundo que entram quando você os cita">📚 Fatos</button>
         <button class="btn-secondary-sm" data-action="open-memory" title="Ver e editar a memória da história">🧠 Memória</button>
         <button class="btn-secondary-sm" data-action="toggle-autoplay" id="btn-autoplay" title="Ler as respostas em voz alta">🔇 Voz</button>
@@ -297,6 +298,14 @@
   <div class="modal modal-wide">
     <h3 class="modal-title">⚙️ Configurações</h3>
     <form id="settings-form" class="settings-form" autocomplete="off"></form>
+    <h4 class="form-section">Backup</h4>
+    <p class="modal-help">Leve suas conversas, personagens, imagens e configurações para outro PC. Restaurar nunca apaga nada: o que já existe é mantido.</p>
+    <div class="backup-actions">
+      <a class="btn-secondary-sm" href="/api/backup" download>⬇️ Baixar backup</a>
+      <label class="btn-secondary-sm backup-file">⬆️ Restaurar backup
+        <input type="file" id="backup-file" accept=".zip" hidden />
+      </label>
+    </div>
     <div class="modal-actions">
       <button class="btn-cancel" data-action="close-settings">Cancelar</button>
       <button class="btn-primary" data-action="save-settings">Salvar</button>

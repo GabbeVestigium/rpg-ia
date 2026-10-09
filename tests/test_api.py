@@ -384,3 +384,71 @@ def test_no_profile_means_no_extra_section(client, services):
     sid = new_session(client, char="trama")
     client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": "Oi"})
     assert "Sobre o jogador" not in _system_of_last_chat(services)
+
+
+def _zip_bytes(entries: dict) -> bytes:
+    import io, zipfile
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        for name, content in entries.items():
+            z.writestr(name, content)
+    return buf.getvalue()
+
+
+def test_export_conversation_uses_profile_name_and_downloads(client):
+    client.put("/api/profile", json={"name": "Tonico Brasa", "age": 29})
+    sid = new_session(client, char="trama")
+    client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": "Oi, Trama"})
+    r = client.get(f"/api/session/{sid}/export")
+    assert r.status_code == 200 and "attachment" in r.headers["content-disposition"]
+    assert ".md" in r.headers["content-disposition"] and "# Trama" in r.text
+    assert "**Tonico Brasa**" in r.text and "Oi, Trama" in r.text
+    txt = client.get(f"/api/session/{sid}/export?format=txt")
+    assert "Tonico Brasa:" in txt.text and ".txt" in txt.headers["content-disposition"]
+    assert client.get("/api/session/..%2fx/export").status_code in (400, 404)
+
+
+def test_backup_contains_data_and_restore_never_overwrites(client):
+    import io, zipfile
+    sid = new_session(client, char="trama")
+    z = zipfile.ZipFile(io.BytesIO(client.get("/api/backup").content))
+    names = set(z.namelist())
+    assert "characters/trama.json" in names and f"sessions/{sid}.json" in names and "worlds/taquara.json" in names
+
+    # restaurar o mesmo backup: tudo já existe, nada é sobrescrito
+    r = client.post("/api/backup/restore", files={"file": ("b.zip", client.get("/api/backup").content)}).json()
+    assert r["restored"] == 0 and r["skipped_existing"] >= 4 and r["rejected"] == []
+
+    # apagar uma sessão e restaurar: ela volta
+    client.delete(f"/api/session/{sid}")
+    backup = _zip_bytes({f"sessions/{sid}.json": z.read(f"sessions/{sid}.json")})
+    r = client.post("/api/backup/restore", files={"file": ("b.zip", backup)}).json()
+    assert r["restored"] == 1 and client.get(f"/api/session/{sid}").status_code == 200
+
+
+def test_restore_rejects_dangerous_or_underage_entries(client):
+    import json
+    good = {"id": "ana", "name": "Ana", "age": 30, "description": "d", "personality": "p",
+            "scenario": "s", "first_message": "oi"}
+    bad_age = {**good, "id": "mini", "age": 16}
+    bad_text = {**good, "id": "minor2", "description": "uma loli"}
+    backup = _zip_bytes({
+        "characters/ana.json": json.dumps(good),
+        "characters/mini.json": json.dumps(bad_age),
+        "characters/minor2.json": json.dumps(bad_text),
+        "characters/../../escape.json": "{}",
+        "../outside.json": "{}",
+        "sessions/x.json": json.dumps({"session_id": "outro-id"}),
+        "scripts/run.py": "print(1)",
+        "scenes/abc/not-an-image.json": "{}",
+    })
+    r = client.post("/api/backup/restore", files={"file": ("b.zip", backup)}).json()
+    assert r["restored"] == 1                                         # só a Ana entrou
+    reasons = {x["file"]: x["reason"] for x in r["rejected"]}
+    assert "18" in reasons["characters/mini.json"] or "recusado" in reasons["characters/mini.json"]
+    assert "characters/minor2.json" in reasons and "characters/../../escape.json" in reasons
+    assert "../outside.json" in reasons and "sessions/x.json" in reasons
+    assert "scripts/run.py" in reasons and "scenes/abc/not-an-image.json" in reasons
+    assert client.get("/api/characters/ana").status_code == 200
+    assert client.get("/api/characters/mini").status_code == 404
+    assert client.post("/api/backup/restore", files={"file": ("b.zip", b"nao e zip")}).status_code == 400

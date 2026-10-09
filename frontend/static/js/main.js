@@ -1,5 +1,6 @@
 // Ponto de entrada: liga os eventos da página (delegação por data-action) e inicia o app.
 
+import { exportChat, restoreBackup } from './backup.js';
 import * as chat from './chat.js';
 import { deleteCharacter, editCharacter, newCharacter, saveCharacter } from './editor.js';
 import { initLayout } from './layout.js';
@@ -46,6 +47,7 @@ const actions = {
   'manual-roll': () => chat.manualRoll(),
   'generate-portrait': () => generatePortrait(),
   'generate-scene': () => generateScene(),
+  'export-chat': () => exportChat(),
   'open-lore': () => openLore(),
   'add-lore': () => addLore(),
   'delete-lore': (el) => deleteLore(Number(el.dataset.row)),
@@ -77,6 +79,11 @@ document.addEventListener('click', (e) => {
 const input = $('user-input');
 input.addEventListener('keydown', chat.handleInputKey);
 input.addEventListener('input', () => chat.autoResize(input));
+
+$('backup-file').addEventListener('change', (e) => {
+  restoreBackup(e.target.files[0]);
+  e.target.value = '';
+});
 
 // Fecha modais com Esc.
 document.addEventListener('keydown', (e) => {
