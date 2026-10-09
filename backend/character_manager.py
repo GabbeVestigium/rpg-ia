@@ -71,6 +71,16 @@ def save_character(character: Character) -> Character:
     return character
 
 
+def remove_portrait_files(character_id: str) -> None:
+    """Apaga o retrato, as expressões (id__feliz.png...) e a semente do personagem."""
+    if not os.path.isdir(PORTRAITS_DIR):
+        return
+    for name in os.listdir(PORTRAITS_DIR):
+        if name in (f"{character_id}.png", f"{character_id}.meta.json") or (
+                name.startswith(f"{character_id}__") and name.endswith(".png")):
+            os.remove(os.path.join(PORTRAITS_DIR, name))
+
+
 def delete_character(character_id: str) -> bool:
     if not is_safe_id(character_id):
         return False
@@ -78,9 +88,7 @@ def delete_character(character_id: str) -> bool:
     if not os.path.exists(path):
         return False
     os.remove(path)
-    portrait = os.path.join(PORTRAITS_DIR, f"{character_id}.png")
-    if os.path.exists(portrait):
-        os.remove(portrait)
+    remove_portrait_files(character_id)
     return True
 
 
@@ -105,6 +113,7 @@ def list_characters() -> List[dict]:
             "summary":      c.summary or _auto_summary(c.description),
             "scenario":     _shorten(c.scenario, 200),
             "avatar_emoji": c.avatar_emoji,
+            "group":        c.group,
             "tags":         c.tags,
             "has_portrait": os.path.exists(os.path.join(PORTRAITS_DIR, f"{c.id}.png")),
         })

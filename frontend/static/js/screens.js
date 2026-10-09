@@ -50,7 +50,7 @@ export async function loadCharacters() {
       <div class="char-card" data-action="open-mode" data-id="${escapeHtml(c.id)}">
         <button class="char-card-edit" data-action="edit-character" data-id="${escapeHtml(c.id)}" title="Editar">✏️</button>
         ${c.has_portrait
-          ? `<img class="char-card-img" src="/static/images/characters/${encodeURIComponent(c.id)}.png" alt="" loading="lazy" />`
+          ? `<img class="char-card-img" src="/portraits/${encodeURIComponent(c.id)}.png" alt="" loading="lazy" />`
           : `<span class="char-card-avatar">${escapeHtml(c.avatar_emoji)}</span>`}
         <div class="char-card-name">${escapeHtml(c.name)} <span class="char-card-age">${Number(c.age)}</span></div>
         <div class="char-card-world">${escapeHtml(c.world_id)}</div>
@@ -96,7 +96,7 @@ export function backToSelect() {
 export function openModeModal(charId) {
   const c = (state.characterList || []).find((x) => x.id === charId);
   if (!c) return;
-  state.character = { id: c.id, name: c.name, avatar_emoji: c.avatar_emoji, world_id: c.world_id };
+  state.character = { id: c.id, name: c.name, avatar_emoji: c.avatar_emoji, world_id: c.world_id, group: c.group };
   $('modal-char-avatar').textContent = c.avatar_emoji;
   $('modal-char-name').textContent = c.name;
   $('prompt-warning').style.display = 'none';
@@ -283,7 +283,7 @@ export async function continueSession(sessionId) {
     state.mode = data.game_mode || 'narrative';
     state.character = {
       id: data.character_id, name: data.character_name, avatar_emoji: data.avatar_emoji,
-      world_id: data.world_id, scenario: data.scenario,
+      world_id: data.world_id, scenario: data.scenario, group: data.group,
     };
     state.history = data.history;
     state.images = data.images || [];

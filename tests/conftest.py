@@ -35,6 +35,7 @@ def reset_state(services):
     # Cada teste começa com configurações e sessões limpas.
     from backend.config import PROFILE_FILE, SESSIONS_DIR, SETTINGS_FILE
     shutil.rmtree(SESSIONS_DIR, ignore_errors=True)
+    shutil.rmtree(os.environ["RPG_PORTRAITS_DIR"], ignore_errors=True)  # retratos e expressões
     for f in (SETTINGS_FILE, PROFILE_FILE):
         if os.path.exists(f):
             os.remove(f)

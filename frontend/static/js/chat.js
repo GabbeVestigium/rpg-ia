@@ -8,6 +8,7 @@ import {
   renderChat, scrollToBottom, showTypingIndicator, startEdit,
 } from './messages.js';
 import { currentLevel, updateCast, updateSidebar } from './sidebar.js';
+import { setMood } from './portrait.js';
 import { speak, stopSpeaking } from './tts.js';
 
 function setStreaming(on) {
@@ -78,6 +79,8 @@ async function runReply(path, body) {
       scrollToBottom();
     } else if (evt.type === 'error') {
       toast(evt.message, 'error', 8000);
+    } else if (evt.type === 'mood') {
+      setMood(evt.mood);
     } else if (evt.type === 'inventory') {
       onInventory(evt.changes);
     } else if (evt.type === 'done') {

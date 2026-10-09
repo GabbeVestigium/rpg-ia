@@ -84,7 +84,7 @@ async def new_session(req: NewSessionRequestV2):
         "character": {
             "id": character.id, "name": character.name, "world_id": character.world_id,
             "avatar_emoji": character.avatar_emoji, "scenario": character.scenario,
-            "first_message": character.first_message,
+            "group": character.group, "first_message": character.first_message,
         },
     }
 
@@ -111,6 +111,7 @@ async def get_session(session_id: str):
         "character_name": character.name if character else "?",
         "world_id": character.world_id if character else "",
         "avatar_emoji": character.avatar_emoji if character else "👤",
+        "group": bool(character and character.group),
         "scenario": character.scenario if character else "",
         "game_mode": rpg.mode.value,
         "history": [{"role": m.role.value, "content": m.content} for m in session.history],

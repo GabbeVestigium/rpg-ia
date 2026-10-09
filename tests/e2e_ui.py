@@ -64,11 +64,22 @@ try:
         check("Trama" in page.inner_text("#topbar-char-name"), "chat abriu com a Trama")
         check(page.locator(".message.assistant .bubble").count() >= 1, "mensagem de abertura renderizada")
 
+        # Retrato e expressões: com as expressões geradas, o clima da resposta troca a imagem
+        page.click("#btn-generate-portrait")
+        page.wait_for_selector("#char-portrait-img", state="visible")
+        page.wait_for_selector("#char-expressions .expr-add")
+        page.click("#char-expressions .expr-add")
+        page.wait_for_function("document.querySelectorAll('#char-expressions .expr-btn:not(.expr-add)').length === 6", timeout=20000)
+        check(page.locator("#char-expressions .expr-add").count() == 0, "5 expressões geradas (mais a normal)")
+        page.screenshot(path=f"{SHOTS}/10-expressions.png")
+
         page.fill("#user-input", "Olá Yasmin")
         page.keyboard.press("Enter")
         page.wait_for_selector(".message.assistant[data-index='2'] .bubble:not(.typing-cursor)")
         txt = page.inner_text(".message.assistant[data-index='2'] .bubble")
         check("pensando" not in txt and "Olá, viajante" in txt, "resposta em streaming sem bloco <think>")
+        page.wait_for_function("document.getElementById('char-portrait-img').src.includes('__happy.png')", timeout=5000)
+        check(True, "o clima da resposta trocou o retrato para a expressão feliz")
         check(page.locator(".message[data-index='2'] .msg-action[data-action=regenerate]").count() == 1,
               "botão regenerar na última resposta")
         page.screenshot(path=f"{SHOTS}/3-chat.png")

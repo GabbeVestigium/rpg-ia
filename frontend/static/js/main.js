@@ -7,7 +7,7 @@ import { initLayout } from './layout.js';
 import { addLore, deleteLore, openLore, saveLore } from './lorebook.js';
 import { openMemory, saveMemory } from './memory.js';
 import { loadProfile, openProfile, saveProfile } from './profile.js';
-import { generatePortrait, generateScene } from './portrait.js';
+import { generateExpressions, generatePortrait, generateScene, showExpression } from './portrait.js';
 import * as screens from './screens.js';
 import { openSettings, saveSettings, toggleAutoplay, updateAutoplayButton } from './settings.js';
 import { state } from './state.js';
@@ -47,6 +47,8 @@ const actions = {
   'manual-roll': () => chat.manualRoll(),
   'generate-portrait': () => generatePortrait(),
   'generate-scene': () => generateScene(),
+  'generate-expressions': () => generateExpressions(),
+  'show-expression': (el) => showExpression(el.dataset.expression),
   'export-chat': () => exportChat(),
   'open-lore': () => openLore(),
   'add-lore': () => addLore(),

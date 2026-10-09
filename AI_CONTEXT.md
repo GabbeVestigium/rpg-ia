@@ -110,6 +110,7 @@ POST /api/chat/regenerate, /api/chat/undo, /api/chat/swipe   (swipe: troca a úl
 POST /api/player/create                  GET /api/player/{session_id}
 POST /api/roll, /api/quest/add           PATCH /api/quest/complete
 GET  /api/sd/status                      POST /api/scene/generate
+POST /api/sd/generate-expression  (mesma semente do retrato, guardada em <id>.meta.json; arquivos <id>__<expressão>.png)
 POST /api/sd/generate-portrait           GET /api/sd/check-portrait/{id}   DELETE /api/sd/delete-portrait/{id}
 GET  /api/tts/status                     POST /api/tts  (Piper, devolve WAV)
 ```
@@ -130,6 +131,8 @@ GET  /api/tts/status                     POST /api/tts  (Piper, devolve WAV)
 - Inventário automático (`backend/inventory_ai.py`): depois da resposta (modos médio e completo), se o texto fala de itens ou
   ouro, o modelo devolve um JSON do que mudou. É aplicado e guardado em `RPGState.last_inventory`, para desfazer e regenerar
   reverterem. Eventos SSE depois do `done` (inventory) chegam com o chat já liberado. Limite: trocar de versão (◀ ▶) não mexe no inventário.
+- Expressões (`backend/mood.py`): heurística por palavras detecta o clima do fim da resposta e o SSE manda `mood` antes do `done`;
+  o frontend troca o retrato se a expressão existir. Retratos são servidos em `/portraits/`. Personagens de grupo não têm expressões.
 - Galeria com criador/editor de personagem na interface.
 - Configurações na interface (modelo instalado, temperatura, min_p, contexto, tamanho da resposta...).
 - RPG: 3 modos (narrativo, médio, completo), d20 automático, XP, quests, relacionamento.

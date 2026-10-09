@@ -33,6 +33,8 @@ http://127.0.0.1:8000 e abre o navegador. Ou use o `🎮 Iniciar RPG-IA.bat`.
 - **Livro de fatos** (📚 Fatos): detalhes do mundo (lugares, grupos, regras) que só entram na conversa quando você os cita.
   O núcleo do mundo fica curto e o resto aparece sob demanda, o que poupa contexto na placa de 6 GB.
 - **Aviso de personagem pesado**: se a ficha fixa ocupa contexto demais, o jogo avisa antes de começar.
+- **Expressões**: depois de gerar o retrato, o botão ✨ ao lado do retrato cria 5 expressões com o mesmo rosto (feliz, brava,
+  triste, surpresa, envergonhada). A imagem muda sozinha conforme o clima de cada resposta. Cada uma leva de 30 a 90s na GTX 1660.
 - **Imagens**: retrato do personagem e botão 🖼️ Cena, que ilustra o momento atual mantendo o visual do personagem.
 - **Voz**: 🔊 em cada resposta, ou leitura automática. Pode ler só as falas e pular as *ações*.
 - **Galeria de personagens** com criador e editor na própria interface.

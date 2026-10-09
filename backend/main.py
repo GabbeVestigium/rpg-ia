@@ -38,6 +38,7 @@ os.makedirs(SCENES_DIR, exist_ok=True)
 
 app.mount("/static", NoCacheStatic(directory=os.path.join(FRONTEND_DIR, "static")), name="static")
 app.mount("/scenes", StaticFiles(directory=SCENES_DIR), name="scenes")
+app.mount("/portraits", NoCacheStatic(directory=PORTRAITS_DIR), name="portraits")
 
 for module in (system, characters, sessions, chat, images, data):
     app.include_router(module.router)

@@ -93,6 +93,25 @@ def clean_tags(text: str, limit: int = 40) -> str:
     return ", ".join(tags[:limit])
 
 
+# Tags de cada expressão. Todas são seguras para qualquer configuração de imagem.
+EXPRESSIONS = {
+    "happy":     "smiling, happy, cheerful, bright eyes",
+    "angry":     "angry, furrowed brow, glaring, clenched teeth",
+    "sad":       "sad, teary eyes, looking down, melancholic",
+    "surprised": "surprised, wide eyes, open mouth, raised eyebrows",
+    "shy":       "blushing, embarrassed, looking away, shy smile",
+}
+
+
+def build_expression_prompt(appearance_tags: str, expression: str, gender: str = "female",
+                            nsfw: bool = False) -> Tuple[str, str]:
+    """Mesmo rosto do retrato (mesmas tags e mesma semente), mudando só a expressão."""
+    parts = [QUALITY_TAGS, SD_ALWAYS_POSITIVE,
+             clean_tags(appearance_tags) if appearance_tags else _gender_tag(gender),
+             "portrait, upper body, looking at viewer", EXPRESSIONS[expression], "dynamic lighting"]
+    return ", ".join(p for p in parts if p), build_negative(nsfw)
+
+
 def build_negative(nsfw: bool) -> str:
     parts = [DEFAULT_NEGATIVE, SD_ALWAYS_NEGATIVE]
     if not nsfw:

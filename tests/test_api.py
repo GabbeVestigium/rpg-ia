@@ -519,3 +519,54 @@ def test_old_exchange_inventory_is_not_reverted_by_undoing_a_newer_one(client, s
     client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": "Oi, de novo"})
     client.post("/api/chat/undo", json={"session_id": sid, "character_id": "trama"})
     assert _inventory(client, sid)[0]["Chave"] == 1                           # a chave da troca antiga continua
+
+
+def _portrait_payloads(services):
+    return services["txt2img_calls"]
+
+
+def test_expressions_reuse_the_portraits_face_and_never_the_minor_filter(client, services):
+    assert client.post("/api/sd/generate-portrait", json={"character_id": "trama"}).status_code == 200
+    first = client.get("/api/sd/check-portrait/trama").json()
+    assert first["expressions"] == [] and "happy" in first["all_expressions"]
+
+    r = client.post("/api/sd/generate-expression", json={"character_id": "trama", "expression": "shy"})
+    assert r.status_code == 200 and r.json()["cached"] is False
+    assert client.post("/api/sd/generate-expression", json={"character_id": "trama", "expression": "shy"}).json()["cached"] is True
+
+    portrait, expression = _portrait_payloads(services)[:2]
+    assert portrait["seed"] == expression["seed"]                         # mesmo rosto
+    assert "blushing" in expression["prompt"] and "glowing blue cybernetic eyes" in expression["prompt"]
+    assert "child" in expression["negative_prompt"] and "adult" in expression["prompt"]
+    assert client.get("/api/sd/check-portrait/trama").json()["expressions"] == ["shy"]
+
+
+def test_expression_rules_and_cleanup(client, services):
+    assert client.post("/api/sd/generate-expression", json={"character_id": "trama", "expression": "happy"}).status_code == 400  # sem retrato
+    client.post("/api/sd/generate-portrait", json={"character_id": "trama"})
+    assert client.post("/api/sd/generate-expression", json={"character_id": "trama", "expression": "naoexiste"}).status_code == 400
+    assert client.post("/api/sd/generate-expression", json={"character_id": "mesa-javali", "expression": "happy"}).status_code == 400  # grupo
+    client.post("/api/sd/generate-expression", json={"character_id": "trama", "expression": "happy"})
+
+    # retrato novo troca a semente e leva as expressões antigas junto, mas só depois de dar certo
+    seed_before = _portrait_payloads(services)[0]["seed"]
+    client.post("/api/sd/generate-portrait", json={"character_id": "trama", "force_regenerate": True})
+    assert _portrait_payloads(services)[-1]["seed"] != seed_before
+    assert client.get("/api/sd/check-portrait/trama").json()["expressions"] == []
+
+    client.post("/api/sd/generate-expression", json={"character_id": "trama", "expression": "sad"})
+    assert client.delete("/api/sd/delete-portrait/trama").status_code == 200
+    after = client.get("/api/sd/check-portrait/trama").json()
+    assert after["exists"] is False and after["image_path"] is None and after["expressions"] == []
+
+
+def test_chat_sends_mood_event_for_single_characters_only(client, services):
+    sid = new_session(client, char="trama")
+    services["reply"] = "*Cora e desvia o olhar* \"Não é nada, eu só... esqueci o que ia dizer.\""
+    events = sse_events(client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": "Oi"}))
+    types = [e["type"] for e in events]
+    assert {"type": "mood", "mood": "shy"} in events and types.index("mood") < types.index("done")
+
+    sid = new_session(client, char="mesa-javali")
+    events = sse_events(client.post("/api/chat", json={"session_id": sid, "character_id": "mesa-javali", "message": "Oi"}))
+    assert not any(e["type"] == "mood" for e in events)                  # grupo não tem um rosto só

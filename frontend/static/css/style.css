@@ -552,3 +552,8 @@ textarea#user-input::placeholder{color:var(--text3);}
 
 .backup-actions{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 4px;}
 .backup-actions a,.backup-file{text-decoration:none;cursor:pointer;display:inline-block;}
+
+/* expressões do retrato: quebram de linha em vez de cortar numa coluna estreita */
+.char-expressions{flex-wrap:wrap;gap:6px;padding:8px 6px;}
+.expr-btn{width:32px;height:32px;}
+.expr-btn.expr-add{font-size:0.95rem;border-style:dashed;color:var(--accentb);}

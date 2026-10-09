@@ -171,3 +171,15 @@ def test_inventory_trigger_prefilter():
     assert looks_like_item_change("Ela te entrega uma chave", "") and looks_like_item_change("", "eu pego a espada")
     assert looks_like_item_change("Você recebeu 20 moedas", "")
     assert not looks_like_item_change("O vento sopra na torre.", "Oi, tudo bem?")
+
+
+def test_detect_mood_from_the_end_of_the_reply():
+    from backend.mood import detect_mood
+    assert detect_mood("*Cora e desvia o olhar* \"Não é nada.\"") == "shy"
+    assert detect_mood("*Sorri de leve* \"Olá, viajante.\"") == "happy"
+    assert detect_mood("*Rosna e cerra os punhos* \"Saia daqui!\"") == "angry"
+    assert detect_mood("*Os olhos marejados, a voz embargada*") == "sad"
+    assert detect_mood("*Arregala os olhos, surpresa*") == "surprised"
+    assert detect_mood("Ela atravessa a sala e abre a janela.") == "neutral"
+    # vale o clima do fim: ria no começo e terminou furiosa
+    assert detect_mood("*Riu muito.* " + "x " * 400 + "*Rosna, furiosa.*") == "angry"

@@ -17,6 +17,7 @@ from fastapi.responses import StreamingResponse
 from backend.character_manager import load_character, load_world
 from backend.inventory_ai import apply_changes, describe, extract_changes, looks_like_item_change, revert_changes
 from backend.lorebook import select_lore
+from backend.mood import detect_mood
 from backend.memory import history_budget, prompt_window, update_summary, window_start
 from backend.models import ChatRequest, EditMessageRequest, MessageRole, RegenerateRequest, SwipeRequest
 from backend.profile_manager import load_profile
@@ -180,6 +181,8 @@ async def _reply(session_id: str, character_id: str, user_text: Optional[str],
                     save_session(session)
 
         if completed and text:
+            if not character.group:
+                yield _sse({"type": "mood", "mood": detect_mood(text)})   # troca a expressão do retrato
             yield _sse({"type": "done"})
             # O que vem depois do "done" roda com o chat já liberado para o jogador.
             if (settings["auto_inventory"] and rpg.mode != GameMode.NARRATIVE and rpg.player
