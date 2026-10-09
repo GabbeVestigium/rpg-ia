@@ -248,3 +248,59 @@ def test_static_files_are_revalidated(client):
     r = client.get("/static/js/main.js")
     assert r.status_code == 200 and r.headers["cache-control"] == "no-cache"
     assert "javascript" in r.headers["content-type"]
+
+
+def _swipe(client, sid):
+    return client.get(f"/api/session/{sid}").json()["swipe"]
+
+
+def test_regenerate_keeps_previous_versions_and_swipe_navigates(client, services):
+    sid = new_session(client)
+    client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": "Oi"})
+    first = client.get(f"/api/session/{sid}").json()["history"][-1]["content"]
+    assert _swipe(client, sid) == {"index": 0, "count": 0}            # sem alternativas ainda
+
+    services["reply"] = "Segunda versão, completamente diferente da primeira."
+    client.post("/api/chat/regenerate", json={"session_id": sid, "character_id": "trama"})
+    services["reply"] = "Terceira versão, ainda diferente das outras duas."
+    client.post("/api/chat/regenerate", json={"session_id": sid, "character_id": "trama"})
+    assert _swipe(client, sid) == {"index": 2, "count": 3}
+    assert len(client.get(f"/api/session/{sid}").json()["history"]) == 3  # nada duplicado
+
+    back = client.post("/api/chat/swipe", json={"session_id": sid, "delta": -1}).json()
+    assert back["content"].startswith("Segunda") and back["index"] == 1
+    back = client.post("/api/chat/swipe", json={"session_id": sid, "delta": -5}).json()
+    assert back["content"] == first and back["index"] == 0           # limita na primeira
+    assert client.get(f"/api/session/{sid}").json()["history"][-1]["content"] == first
+    nxt = client.post("/api/chat/swipe", json={"session_id": sid, "delta": 1}).json()
+    assert nxt["content"].startswith("Segunda")
+
+
+def test_failed_regenerate_restores_the_previous_reply(client, services):
+    sid = new_session(client)
+    client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": "Oi"})
+    before = client.get(f"/api/session/{sid}").json()["history"]
+    services["fail_chat"] = True
+    r = client.post("/api/chat/regenerate", json={"session_id": sid, "character_id": "trama"})
+    assert any(e["type"] == "error" for e in sse_events(r))
+    assert client.get(f"/api/session/{sid}").json()["history"] == before   # a resposta antiga voltou
+
+
+def test_new_message_edit_and_undo_handle_swipes(client, services):
+    sid = new_session(client)
+    client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": "Oi"})
+    services["reply"] = "Versão B da resposta, para termos duas versões."
+    client.post("/api/chat/regenerate", json={"session_id": sid, "character_id": "trama"})
+    # editar a resposta atual atualiza a versão atual
+    client.post("/api/session/edit", json={"session_id": sid, "index": 2, "content": "Versão B corrigida."})
+    client.post("/api/chat/swipe", json={"session_id": sid, "delta": -1})
+    assert client.post("/api/chat/swipe", json={"session_id": sid, "delta": 1}).json()["content"] == "Versão B corrigida."
+    # mensagem nova descarta as versões antigas
+    client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": "E agora?"})
+    assert _swipe(client, sid)["count"] == 0
+    assert client.post("/api/chat/swipe", json={"session_id": sid, "delta": -1}).status_code == 400
+    # desfazer também descarta
+    services["reply"] = "Outra versão qualquer para a nova resposta."
+    client.post("/api/chat/regenerate", json={"session_id": sid, "character_id": "trama"})
+    client.post("/api/chat/undo", json={"session_id": sid, "character_id": "trama"})
+    assert _swipe(client, sid)["count"] == 0

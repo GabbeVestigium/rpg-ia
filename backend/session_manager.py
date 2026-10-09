@@ -46,6 +46,9 @@ def load_session(session_id: str) -> Optional[SessionData]:
             summary=data.get("summary", ""),
             summarized_upto=data.get("summarized_upto", 0),
             images=[SceneImage(**i) for i in data.get("images", [])],
+            swipes=data.get("swipes", []),
+            swipe_index=data.get("swipe_index", 0),
+            swipe_for=data.get("swipe_for", -1),
         )
     except (KeyError, TypeError, ValueError):
         return None
@@ -67,6 +70,9 @@ def save_session(session: SessionData) -> None:
         "summary":         session.summary,
         "summarized_upto": session.summarized_upto,
         "images":          [i.model_dump(mode="json") for i in session.images],
+        "swipes":          session.swipes,
+        "swipe_index":     session.swipe_index,
+        "swipe_for":       session.swipe_for,
     })
 
 
@@ -102,6 +108,7 @@ def pop_last_exchange(session: SessionData) -> Optional[str]:
         user_text = session.history.pop().content
     session.summarized_upto = min(session.summarized_upto, len(session.history))
     session.images = [i for i in session.images if i.at <= len(session.history)]
+    clear_swipes(session)
     save_session(session)
     return user_text
 
@@ -167,3 +174,46 @@ _locks: dict = {}
 def session_lock(session_id: str):
     import asyncio
     return _locks.setdefault(session_id, asyncio.Lock())
+
+
+# ─── VERSÕES DA ÚLTIMA RESPOSTA (swipes) ──────────────────────────────────────
+
+MAX_SWIPES = 8
+
+
+def clear_swipes(session: SessionData) -> None:
+    session.swipes = []
+    session.swipe_index = 0
+    session.swipe_for = -1
+
+
+def swipes_valid(session: SessionData) -> bool:
+    """As versões só valem para a última mensagem, e só se ela ainda for a atual."""
+    last = len(session.history) - 1
+    return (
+        last > 0 and session.swipe_for == last
+        and session.history[last].role == MessageRole.ASSISTANT
+        and 0 <= session.swipe_index < len(session.swipes)
+        and session.swipes[session.swipe_index] == session.history[last].content
+    )
+
+
+def swipe_info(session: SessionData) -> dict:
+    if swipes_valid(session) and len(session.swipes) > 1:
+        return {"index": session.swipe_index, "count": len(session.swipes)}
+    return {"index": 0, "count": 0}
+
+
+def start_swipes(session: SessionData) -> None:
+    """Antes de regenerar: garante que a resposta atual fica guardada como uma das versões."""
+    if not swipes_valid(session):
+        session.swipes = [session.history[-1].content]
+        session.swipe_index = 0
+        session.swipe_for = len(session.history) - 1
+
+
+def add_swipe(session: SessionData, text: str) -> None:
+    """Depois de regenerar: acrescenta a nova versão (a mais antiga sai se passar do limite)."""
+    session.swipes = (session.swipes + [text])[-MAX_SWIPES:]
+    session.swipe_index = len(session.swipes) - 1
+    session.swipe_for = len(session.history) - 1

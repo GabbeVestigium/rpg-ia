@@ -71,6 +71,11 @@ class EditMessageRequest(BaseModel):
     content: str = Field(min_length=1, max_length=8000)
 
 
+class SwipeRequest(BaseModel):
+    session_id: str
+    delta: int                     # -1 versão anterior, +1 próxima
+
+
 class NewSessionRequest(BaseModel):
     character_id: str
 
@@ -89,6 +94,9 @@ class SessionData(BaseModel):
     summary: str = ""                # Resumo da história que já saiu da janela de contexto
     summarized_upto: int = 0         # Quantas mensagens do histórico o resumo já cobre
     images: List[SceneImage] = []    # Cenas geradas durante o chat
+    swipes: List[str] = []           # Versões da última resposta (🔄 guarda as anteriores)
+    swipe_index: int = 0             # Qual versão está no histórico agora
+    swipe_for: int = -1              # Índice da mensagem a que as versões pertencem
 
 
 class ChatResponse(BaseModel):

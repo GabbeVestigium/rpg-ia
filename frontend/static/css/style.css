@@ -538,3 +538,5 @@ textarea#user-input::placeholder{color:var(--text3);}
 .cast-row .rel-bar{transition:width 0.6s ease;}
 .cast-row.up .cast-label{animation:pulse 1.2s 2;}
 .cast-row.down .cast-label{animation:pulse 1.2s 2;}
+
+.swipe-label{font-size:0.74rem;color:var(--text2);align-self:center;padding:0 2px;font-variant-numeric:tabular-nums;}

@@ -16,7 +16,7 @@ from fastapi.responses import StreamingResponse
 
 from backend.character_manager import load_character, load_world
 from backend.memory import history_budget, prompt_window, update_summary, window_start
-from backend.models import ChatRequest, EditMessageRequest, MessageRole, RegenerateRequest
+from backend.models import ChatRequest, EditMessageRequest, MessageRole, RegenerateRequest, SwipeRequest
 from backend.ollama_client import OllamaError, build_system_prompt, stream_chat
 from backend.rpg_engine import (
     auto_relationship_delta, calculate_xp_reward, cast_delta, cast_targets, detect_risk_action,
@@ -24,8 +24,8 @@ from backend.rpg_engine import (
 )
 from backend.rpg_models import GameMode
 from backend.session_manager import (
-    add_message, get_rpg_state, load_session, pop_last_assistant,
-    pop_last_exchange, save_session, session_lock,
+    add_message, add_swipe, clear_swipes, get_rpg_state, load_session, pop_last_assistant,
+    pop_last_exchange, save_session, session_lock, start_swipes, swipe_info, swipes_valid,
 )
 from backend.settings_manager import get_settings
 
@@ -79,7 +79,8 @@ def _streaming(generator: AsyncIterator[str]) -> StreamingResponse:
     )
 
 
-async def _reply(session_id: str, character_id: str, user_text: Optional[str]) -> AsyncIterator[str]:
+async def _reply(session_id: str, character_id: str, user_text: Optional[str],
+                 regen: bool = False) -> AsyncIterator[str]:
     """
     Gera a resposta do personagem. Com user_text, grava antes a mensagem do jogador
     (e aplica rolagem/relacionamento); sem ele, só responde ao histórico atual
@@ -117,6 +118,7 @@ async def _reply(session_id: str, character_id: str, user_text: Optional[str]) -
                         rpg.player.relationship.set_score(rpg.player.relationship.score + delta)
             rpg.event_log = rpg.event_log[-50:]
             session.rpg_state = rpg
+            clear_swipes(session)  # mensagem nova: as versões da resposta anterior deixam de valer
             add_message(session, MessageRole.USER, stored)
             added_user_message = True
 
@@ -146,6 +148,12 @@ async def _reply(session_id: str, character_id: str, user_text: Optional[str]) -
             if text and (completed or len(text) >= 20):
                 # Resposta completa, ou parcial que o jogador chegou a ler.
                 add_message(session, MessageRole.ASSISTANT, text)
+                if regen:
+                    add_swipe(session, text)
+                    save_session(session)
+            elif regen and session.swipes:
+                # Falhou ao regenerar: devolve a resposta que já existia em vez de deixar a conversa sem ela.
+                add_message(session, MessageRole.ASSISTANT, session.swipes[session.swipe_index])
             elif added_user_message:
                 # Nada gerado: desfaz a mensagem do jogador para o histórico não ficar torto.
                 if session.history and session.history[-1].role == MessageRole.USER:
@@ -177,8 +185,26 @@ async def regenerate(req: RegenerateRequest):
         session = load_session(req.session_id)
         if not session or len(session.history) < 2:
             raise HTTPException(400, "Não há resposta para regenerar")
-        pop_last_assistant(session)
-    return _streaming(_reply(req.session_id, req.character_id, None))
+        if session.history[-1].role == MessageRole.ASSISTANT:
+            start_swipes(session)  # a resposta atual vira a versão 1
+            pop_last_assistant(session)
+    return _streaming(_reply(req.session_id, req.character_id, None, regen=True))
+
+
+@router.post("/chat/swipe")
+async def swipe(req: SwipeRequest):
+    """Troca a última resposta por outra das versões guardadas."""
+    async with session_lock(req.session_id):
+        session = load_session(req.session_id)
+        if not session:
+            raise HTTPException(404, "Sessão não encontrada")
+        if not swipes_valid(session):
+            raise HTTPException(400, "Não há outras versões desta resposta")
+        index = max(0, min(len(session.swipes) - 1, session.swipe_index + req.delta))
+        session.swipe_index = index
+        session.history[-1].content = session.swipes[index]
+        save_session(session)
+        return {"content": session.history[-1].content, **swipe_info(session)}
 
 
 @router.post("/chat/undo")
@@ -202,7 +228,11 @@ async def edit_message(req: EditMessageRequest):
             raise HTTPException(404, "Sessão não encontrada")
         if not 0 <= req.index < len(session.history):
             raise HTTPException(400, "Mensagem inexistente")
+        # A validade das versões é checada antes de mexer no texto (ela compara com o texto atual).
+        edits_current_swipe = swipes_valid(session) and req.index == session.swipe_for
         session.history[req.index].content = req.content.strip()
+        if edits_current_swipe:
+            session.swipes[session.swipe_index] = session.history[req.index].content
         # O resumo pode ter usado o texto antigo: recalcula a partir dali.
         if req.index < session.summarized_upto:
             session.summary = ""

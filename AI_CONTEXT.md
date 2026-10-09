@@ -104,7 +104,7 @@ POST /api/session/new                    GET/DELETE /api/session/{id}
 GET  /api/sessions                       GET/PUT /api/session/{id}/memory
 POST /api/session/edit                   (edita o texto de uma mensagem)
 POST /api/chat                           (SSE: eventos roll | token | error | done, JSON por linha)
-POST /api/chat/regenerate, /api/chat/undo
+POST /api/chat/regenerate, /api/chat/undo, /api/chat/swipe   (swipe: troca a última resposta por outra versão guardada)
 POST /api/player/create                  GET /api/player/{session_id}
 POST /api/roll, /api/quest/add           PATCH /api/quest/complete
 GET  /api/sd/status                      POST /api/scene/generate

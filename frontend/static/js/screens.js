@@ -232,6 +232,7 @@ export async function confirmCreatePlayer() {
     state.history = [{ role: 'assistant', content: sess.character.first_message }];
     state.images = [];
     state.cast = sess.cast || [];
+    state.swipe = { index: 0, count: 0 };
     openChatScreen(playerData.player);
   } catch (e) {
     toast(e.message, 'error', 7000);
@@ -251,6 +252,7 @@ export async function startNewChat(characterId, mode) {
     state.history = [{ role: 'assistant', content: data.character.first_message }];
     state.images = [];
     state.cast = data.cast || [];
+    state.swipe = { index: 0, count: 0 };
     openChatScreen(null);
   } catch (e) {
     toast(e.message, 'error');
@@ -269,6 +271,7 @@ export async function continueSession(sessionId) {
     state.history = data.history;
     state.images = data.images || [];
     state.cast = data.cast || [];
+    state.swipe = data.swipe || { index: 0, count: 0 };
     openChatScreen(data.rpg_state?.player || null);
   } catch (e) {
     toast(e.message, 'error');

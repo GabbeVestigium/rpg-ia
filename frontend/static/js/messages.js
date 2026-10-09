@@ -107,7 +107,15 @@ export function refreshActions() {
     if (msg.role === 'assistant') add('speak', '🔊', 'Ouvir');
     add('edit-message', '✏️', 'Editar');
     if (index === lastAssistant && msg.role === 'assistant' && index > 0) {
-      add('regenerate', '🔄', 'Gerar outra resposta');
+      if (state.swipe.count > 1) {
+        add('swipe-prev', '◀', 'Versão anterior');
+        const label = document.createElement('span');
+        label.className = 'swipe-label';
+        label.textContent = `${state.swipe.index + 1}/${state.swipe.count}`;
+        bar.appendChild(label);
+        add('swipe-next', '▶', 'Próxima versão');
+      }
+      add('regenerate', '🔄', 'Gerar outra versão');
       add('undo', '↩', 'Desfazer esta troca');
     }
     div.appendChild(bar);

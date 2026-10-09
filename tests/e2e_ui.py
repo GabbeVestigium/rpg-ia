@@ -78,6 +78,15 @@ try:
         page.click(".message[data-index='2'] [data-action=regenerate]")
         page.wait_for_selector(".message.assistant[data-index='2'] .bubble:not(.typing-cursor)")
         check(page.locator(".message").count() == 3, "regenerar não duplica mensagens")
+        page.wait_for_selector(".message[data-index='2'] .swipe-label")
+        check(page.inner_text(".message[data-index='2'] .swipe-label") == "2/2", "regenerar guarda a versão anterior (2/2)")
+        page.hover(".message[data-index='2']")
+        page.click(".message[data-index='2'] [data-action=swipe-prev]")
+        page.wait_for_function("document.querySelector(\".message[data-index='2'] .swipe-label\")?.textContent === '1/2'")
+        check(True, "dá para voltar para a versão 1/2")
+        page.hover(".message[data-index='2']")
+        page.click(".message[data-index='2'] [data-action=swipe-next]")
+        page.wait_for_function("document.querySelector(\".message[data-index='2'] .swipe-label\")?.textContent === '2/2'")
 
         # Editar
         page.hover(".message[data-index='2']")

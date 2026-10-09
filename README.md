@@ -21,6 +21,7 @@ http://127.0.0.1:8000 e abre o navegador. Ou use o `🎮 Iniciar RPG-IA.bat`.
 ## O que tem
 
 - **Chat em streaming** com botões para **regenerar**, **desfazer**, **editar** qualquer mensagem e **parar** a resposta.
+  O 🔄 guarda a versão anterior: use ◀ 2/3 ▶ para voltar e escolher a melhor resposta.
 - **Memória de longo prazo**: a conversa inteira fica salva; o modelo recebe as mensagens recentes
   (ajustadas ao contexto) mais um resumo automático do resto. Você vê e edita o resumo em 🧠 Memória.
 - **Imagens**: retrato do personagem e botão 🖼️ Cena, que ilustra o momento atual mantendo o visual do personagem.

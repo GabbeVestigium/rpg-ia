@@ -14,7 +14,7 @@ from backend.rpg_models import (
 )
 from backend.session_manager import (
     add_message, create_session, delete_session, get_rpg_state, list_sessions,
-    load_session, save_rpg_state, session_lock,
+    load_session, save_rpg_state, session_lock, swipe_info,
 )
 
 router = APIRouter(prefix="/api", tags=["sessions"])
@@ -116,6 +116,7 @@ async def get_session(session_id: str):
         "history": [{"role": m.role.value, "content": m.content} for m in session.history],
         "images": [i.model_dump() for i in session.images],
         "has_summary": bool(session.summary),
+        "swipe": swipe_info(session),
         "cast": cast_summary(character.cast if character else [], rpg.cast_relations),
         "rpg_state": rpg.model_dump(mode="json") if rpg.player else None,
     }

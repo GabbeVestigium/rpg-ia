@@ -23,6 +23,7 @@ function setStreaming(on) {
 async function resync() {
   try {
     const data = await api(`/api/session/${state.session}`);
+    state.swipe = data.swipe || { index: 0, count: 0 };
     const same = data.history.length === state.history.length
       && data.history.every((m, i) => m.content === state.history[i].content);
     if (!same) {
@@ -125,6 +126,19 @@ async function finishExchange(reply, userText) {
     $('user-input').value = userText;
   }
   if (reply && state.settings?.tts_auto_play) speak(reply);
+}
+
+/** Troca a última resposta por outra versão guardada (delta -1 ou +1). */
+export async function swipeVersion(delta) {
+  if (state.streaming) return;
+  try {
+    const res = await api('/api/chat/swipe', { method: 'POST', body: { session_id: state.session, delta } });
+    state.history[state.history.length - 1].content = res.content;
+    state.swipe = { index: res.index, count: res.count };
+    renderChat();
+  } catch (e) {
+    toast(e.message, 'error');
+  }
 }
 
 export function stopStreaming() { state.abort?.abort(); }
