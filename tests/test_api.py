@@ -574,7 +574,7 @@ def test_chat_sends_mood_event_for_single_characters_only(client, services):
 
 def test_every_shipped_character_is_valid_adult_and_has_a_real_world(client):
     ids = [c["id"] for c in client.get("/api/characters").json()]
-    assert set(ids) >= {"mesa-javali", "trama", "sibila", "gilda", "taina", "leonor"}
+    assert set(ids) >= {"mesa-javali", "trama", "sibila", "estela", "taina", "leonor"}
     for cid in ids:
         c = client.get(f"/api/characters/{cid}").json()
         assert c["age"] >= 18 and c["first_message"] and c["summary"] and c["appearance_tags"], cid
