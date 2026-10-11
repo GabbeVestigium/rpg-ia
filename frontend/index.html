@@ -2,10 +2,17 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#111118" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="RPG IA" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png" />
   <title>RPG IA</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
-  <link rel="stylesheet" href="/static/css/style.css?v=12" />
+  <link rel="stylesheet" href="/static/css/style.css?v=13" />
 </head>
 <body>
 
@@ -171,20 +178,24 @@
     <div class="resize-handle" id="resize-left"></div>
 
     <!-- COLUNA 2: Chat principal -->
-    <div class="chat-main" style="flex:1;min-width:400px">
+    <div class="chat-main">
       <div class="chat-topbar">
         <button class="btn-back-sm" data-action="go-back">← Sair</button>
+        <button class="btn-secondary-sm mobile-only" data-action="toggle-panel" data-panel="char-panel" title="Personagem e dados">👤</button>
         <div class="chat-topbar-info">
           <span id="topbar-char-name"></span>
           <span id="topbar-session" class="topbar-session"></span>
         </div>
-        <button class="btn-secondary-sm" data-action="generate-scene" id="btn-scene" title="Gerar imagem da cena atual">🖼️ Cena</button>
-        <button class="btn-secondary-sm" data-action="export-chat" title="Baixar esta conversa em texto">📄 Exportar</button>
-        <button class="btn-secondary-sm" data-action="open-lore" title="Fatos do mundo que entram quando você os cita">📚 Fatos</button>
-        <button class="btn-secondary-sm" data-action="open-memory" title="Ver e editar a memória da história">🧠 Memória</button>
-        <button class="btn-secondary-sm" data-action="toggle-autoplay" id="btn-autoplay" title="Ler as respostas em voz alta">🔇 Voz</button>
-        <button class="btn-secondary-sm" data-action="open-settings" title="Configurações">⚙️</button>
-        <button class="btn-secondary-sm" data-action="new-chat">🗑️ Nova</button>
+        <button class="btn-secondary-sm mobile-only" data-action="toggle-panel" data-panel="sidebar" title="Status, inventário e missões">📊</button>
+        <div class="chat-tools">
+          <button class="btn-secondary-sm" data-action="generate-scene" id="btn-scene" title="Gerar imagem da cena atual">🖼️ Cena</button>
+          <button class="btn-secondary-sm" data-action="export-chat" title="Baixar esta conversa em texto">📄 Exportar</button>
+          <button class="btn-secondary-sm" data-action="open-lore" title="Fatos do mundo que entram quando você os cita">📚 Fatos</button>
+          <button class="btn-secondary-sm" data-action="open-memory" title="Ver e editar a memória da história">🧠 Memória</button>
+          <button class="btn-secondary-sm" data-action="toggle-autoplay" id="btn-autoplay" title="Ler as respostas em voz alta">🔇 Voz</button>
+          <button class="btn-secondary-sm" data-action="open-settings" title="Configurações">⚙️</button>
+          <button class="btn-secondary-sm" data-action="new-chat">🗑️ Nova</button>
+        </div>
       </div>
       <div id="messages" class="messages"></div>
       <div class="input-area">
@@ -248,6 +259,9 @@
         </div>
       </div>
     </div>
+
+    <!-- Celular: fundo escuro atrás das gavetas laterais; tocar nele fecha -->
+    <div class="panel-backdrop" id="panel-backdrop" data-action="close-panels"></div>
 
   </div>
 </div>
@@ -330,6 +344,6 @@
 </div>
 
 <script src="/static/js/dice.js?v=20"></script>
-<script type="module" src="/static/js/main.js?v=1"></script>
+<script type="module" src="/static/js/main.js?v=2"></script>
 </body>
 </html>

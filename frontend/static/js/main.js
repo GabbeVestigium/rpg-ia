@@ -3,7 +3,7 @@
 import { exportChat, restoreBackup } from './backup.js';
 import * as chat from './chat.js';
 import { deleteCharacter, editCharacter, newCharacter, saveCharacter } from './editor.js';
-import { initLayout } from './layout.js';
+import { closePanels, initLayout, togglePanel } from './layout.js';
 import { addLore, deleteLore, openLore, saveLore } from './lorebook.js';
 import { openMemory, saveMemory } from './memory.js';
 import { loadProfile, openProfile, saveProfile } from './profile.js';
@@ -30,7 +30,9 @@ const actions = {
   'attr-change': (el) => screens.changeAttr(el.dataset.attr, Number(el.dataset.delta)),
   'confirm-create': () => screens.confirmCreatePlayer(),
   // chat
-  'go-back': () => screens.backToSelect(),
+  'go-back': () => { closePanels(); screens.backToSelect(); },
+  'toggle-panel': (el) => togglePanel(el.dataset.panel),
+  'close-panels': () => closePanels(),
   'new-chat': () => {
     if (confirm('Iniciar nova conversa com este personagem?')) screens.openModeModal(state.character.id);
   },
@@ -73,7 +75,13 @@ const actions = {
 
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-action]');
-  if (!el || el.disabled) return;
+  if (!el) {
+    // Celular: tocar numa mensagem mostra as ações dela (ouvir, editar...).
+    const msg = e.target.closest('#messages .message[data-index]');
+    if (msg && !msg.classList.contains('editing')) msg.classList.toggle('show-actions');
+    return;
+  }
+  if (el.disabled) return;
   const handler = actions[el.dataset.action];
   if (handler) handler(el, e);
 });
@@ -106,3 +114,8 @@ async function init() {
 }
 
 init().catch((e) => toast(`Erro ao iniciar: ${e.message}`, 'error'));
+
+// Deixa o app instalável na tela inicial do celular. Só funciona em https ou em 127.0.0.1.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => { /* sem service worker o site funciona igual */ });
+}

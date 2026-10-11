@@ -86,11 +86,15 @@ export function renderChat() {
 
 /** Recoloca as ações (ouvir, editar, regenerar, desfazer) conforme o estado atual. */
 export function refreshActions() {
+  const box = $('messages');
+  // Margem de uma tela: a rolagem suave do streaming pode ainda estar no meio do caminho.
+  const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < box.clientHeight;
   document.querySelectorAll('.msg-actions').forEach((el) => el.remove());
   const lastAssistant = state.history.length - 1;
   document.querySelectorAll('#messages .message[data-index]').forEach((div) => {
     const index = Number(div.dataset.index);
     const msg = state.history[index];
+    div.classList.toggle('is-last', index === state.history.length - 1);
     if (!msg || div.classList.contains('editing')) return;
 
     const bar = document.createElement('div');
@@ -120,6 +124,8 @@ export function refreshActions() {
     }
     div.appendChild(bar);
   });
+  // A barra de ações aumenta a última mensagem: sem isso, ela fica escondida embaixo da caixa de texto.
+  if (atBottom) scrollToBottom();
 }
 
 export function startEdit(index) {

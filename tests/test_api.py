@@ -588,3 +588,15 @@ def test_every_shipped_character_is_valid_adult_and_has_a_real_world(client):
         sid = new_session(client, char=cid)
         events = sse_events(client.post("/api/chat", json={"session_id": sid, "character_id": cid, "message": "Oi"}))
         assert events[-1]["type"] == "done" and any(e["type"] == "token" for e in events), cid
+
+
+def test_app_installable_on_phone(client):
+    m = client.get("/manifest.webmanifest")
+    assert m.status_code == 200 and m.headers["content-type"].startswith("application/manifest+json")
+    manifest = m.json()
+    assert manifest["start_url"] == "/" and manifest["display"] == "standalone"
+    for icon in manifest["icons"]:
+        assert client.get(icon["src"]).status_code == 200, icon["src"]
+    sw = client.get("/sw.js")
+    assert sw.status_code == 200 and "javascript" in sw.headers["content-type"]
+    assert sw.headers["cache-control"] == "no-cache"

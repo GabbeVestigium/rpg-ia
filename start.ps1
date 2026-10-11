@@ -58,7 +58,34 @@ try {
     Write-Host "[OK] Ollama iniciado" -ForegroundColor Green
 }
 
-# ── 5. Sobe o servidor FastAPI ───────────────────────────────
+# ── 5. Celular pelo Tailscale (opcional) ─────────────────────
+# O `tailscale serve` cria um endereço https que só os aparelhos da sua conta Tailscale abrem
+# e repassa para 127.0.0.1:8000. O servidor continua fechado para a rede.
+$TailscaleExe = (Get-Command tailscale -ErrorAction SilentlyContinue).Source
+if (-not $TailscaleExe -and (Test-Path "C:\Program Files\Tailscale\tailscale.exe")) {
+    $TailscaleExe = "C:\Program Files\Tailscale\tailscale.exe"
+}
+if ($TailscaleExe) {
+    $tsStatus = $null
+    try { $tsStatus = & $TailscaleExe status --json 2>$null | ConvertFrom-Json } catch { }
+    if ($tsStatus -and $tsStatus.BackendState -eq "Running") {
+        Write-Host "[...] Ligando o acesso pelo celular (Tailscale)..." -ForegroundColor Yellow
+        # Na primeira vez o Tailscale pode mostrar um link para liberar o HTTPS: abra e aprove.
+        & $TailscaleExe serve --bg 8000
+        if ($LASTEXITCODE -eq 0) {
+            $PhoneUrl = "https://" + $tsStatus.Self.DNSName.TrimEnd(".")
+            Write-Host "[OK] No celular, abra: $PhoneUrl" -ForegroundColor Green
+        } else {
+            Write-Host "[AVISO] O Tailscale não ligou o acesso. Rode este script como administrador uma vez." -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "[INFO] Tailscale instalado, mas desligado. Abra o Tailscale e entre na conta para usar no celular." -ForegroundColor DarkGray
+    }
+} else {
+    Write-Host "[INFO] Para jogar no celular, instale o Tailscale (veja README.md)." -ForegroundColor DarkGray
+}
+
+# ── 6. Sobe o servidor FastAPI ───────────────────────────────
 Write-Host ""
 Write-Host "[...] Iniciando servidor RPG IA em http://127.0.0.1:8000" -ForegroundColor Cyan
 Write-Host "      Pressione Ctrl+C para parar." -ForegroundColor DarkGray
