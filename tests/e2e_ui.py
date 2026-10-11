@@ -84,6 +84,20 @@ try:
               "botão regenerar na última resposta")
         page.screenshot(path=f"{SHOTS}/3-chat.png")
 
+        # Escolhas: chegam depois da resposta e, ao tocar, viram a mensagem do jogador
+        page.wait_for_selector("#choices .choice[data-action=pick-choice]", timeout=8000)
+        check(page.locator("#choices .choice").count() == 3, "3 escolhas depois da resposta")
+        page.click("#choices .choice >> nth=0")
+        page.wait_for_selector(".message.user[data-index='3']")
+        check("Pergunto o que ela quer" in page.inner_text(".message.user[data-index='3'] .bubble"),
+              "tocar numa escolha envia o texto dela")
+        page.wait_for_selector(".message.assistant[data-index='4'] .bubble:not(.typing-cursor)")
+        page.wait_for_selector("#choices .choice[data-action=pick-choice]", timeout=8000)
+        page.click("[data-action=undo]") if page.locator(".message[data-index='4'] [data-action=undo]").count() else None
+        page.wait_for_function("document.querySelectorAll('.message[data-index]').length === 3")
+        check(page.locator("#choices").count() == 0, "desfazer some com as escolhas da resposta desfeita")
+        page.fill("#user-input", "")
+
         # Regenerar
         page.hover(".message[data-index='2']")
         page.click(".message[data-index='2'] [data-action=regenerate]")

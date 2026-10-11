@@ -14,7 +14,8 @@ PNG_B64 = (
 )
 
 state = {"chat_calls": [], "unloaded": 0, "txt2img_calls": [], "reply": None, "fail_chat": False,
-         "inventory_reply": '{"gain":[{"name":"Chave enferrujada","qty":1,"type":"key"}],"lose":[],"gold":0}'}
+         "inventory_reply": '{"gain":[{"name":"Chave enferrujada","qty":1,"type":"key"}],"lose":[],"gold":0}',
+         "choices_reply": 'Opções: ["Pergunto o que ela quer de mim", "Aceito o trabalho na hora", "Peço para ver o chip"]'}
 
 
 def make_ollama() -> FastAPI:
@@ -42,10 +43,13 @@ def make_ollama() -> FastAPI:
         is_summary = "memória de uma história" in system
         is_tags = "Danbooru" in system
         is_inventory = "inventário de um jogo" in system
+        is_choices = "próximas jogadas" in system
         if is_summary:
             text = "Resumo falso: Yasmin e o jogador se conheceram na taverna."
         elif is_inventory:
             text = "Claro! Aqui está o JSON: " + state["inventory_reply"]
+        elif is_choices:
+            text = state["choices_reply"]
         elif is_tags:
             text = "tavern, night, candlelight, sitting, smile, upper body, 1girl, ELF-ears"
         else:

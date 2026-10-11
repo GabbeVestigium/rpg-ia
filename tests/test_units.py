@@ -183,3 +183,24 @@ def test_detect_mood_from_the_end_of_the_reply():
     assert detect_mood("Ela atravessa a sala e abre a janela.") == "neutral"
     # vale o clima do fim: ria no começo e terminou furiosa
     assert detect_mood("*Riu muito.* " + "x " * 400 + "*Rosna, furiosa.*") == "angry"
+
+
+def test_loop_guard_cuts_repeated_block_and_keeps_normal_text():
+    from backend.loop_guard import find_loop, trim_loop
+    block = 'Ela suspira, como se tivesse esquecido algo importante. "Vamos lá, me chame Estela."\n\n"Estela."\n\n'
+    looped = '"Então você quer ficar?"\n\n' + block * 3
+    trimmed = trim_loop(looped)
+    assert trimmed.count("me chame Estela") == 1 and trimmed.startswith('"Então')
+    # Repetição curta e de propósito não conta como loop.
+    assert find_loop('"Sim." Ela sorri. "Sim." *Pega o copo.* Você toca a música de ontem.') is None
+    assert find_loop("Nada se repete aqui. Cada frase é nova. A história segue.") is None
+
+
+def test_parse_choices_handles_json_lists_and_numbered_lines():
+    from backend.choices import parse_choices
+    assert parse_choices('Claro: ["Aceito", "Recuso com educação", "Aceito"]') == ["Aceito", "Recuso com educação"]
+    assert parse_choices("1. Pergunto o nome dela\n2) Saio pela janela\n- Fico calado") == [
+        "Pergunto o nome dela", "Saio pela janela", "Fico calado"]
+    assert parse_choices("sem nada útil") == []
+    long = parse_choices('["' + "palavra " * 30 + '"]')[0]
+    assert len(long) <= 91 and long.endswith("…")

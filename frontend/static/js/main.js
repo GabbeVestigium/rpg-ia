@@ -39,6 +39,7 @@ const actions = {
     if (confirm('Iniciar nova conversa com este personagem?')) screens.openModeModal(state.character.id);
   },
   'send': () => chat.sendMessage(),
+  'pick-choice': (el) => chat.pickChoice(el.dataset.text),
   'stop': () => chat.stopStreaming(),
   'regenerate': () => chat.regenerate(),
   'swipe-prev': () => chat.swipeVersion(-1),

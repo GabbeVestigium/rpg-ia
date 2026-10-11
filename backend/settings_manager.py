@@ -31,6 +31,8 @@ _SCHEMA: Dict[str, dict] = {
     "memory_enabled":      {"default": True,  "type": bool},
     # Inventário
     "auto_inventory":      {"default": True,  "type": bool},
+    # Escolhas sugeridas depois de cada resposta
+    "auto_choices":        {"default": True,  "type": bool},
     # Imagens
     "sd_nsfw":             {"default": False, "type": bool},
     "sd_steps":            {"default": 28,    "type": int,   "min": 10, "max": 60},

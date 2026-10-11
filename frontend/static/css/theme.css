@@ -131,6 +131,21 @@
 #send-btn,#stop-btn{width:40px;height:40px;border-radius:50%;}
 #send-btn{background:linear-gradient(135deg,var(--accent),#a272f0);}
 
+/* Escolhas depois da resposta */
+.choices{display:flex;flex-direction:column;align-items:flex-start;gap:8px;max-width:80%;margin-top:-4px;animation:fadeSlide .25s ease;}
+.choice{text-align:left;background:var(--tint-soft);border:1px solid var(--tint-line);color:var(--text);border-radius:14px;
+  padding:9px 14px;font:inherit;font-size:0.9rem;line-height:1.4;cursor:pointer;transition:background .15s,border-color .15s,transform .1s;}
+.choice::before{content:'➜ ';color:var(--tint);}
+.choice:hover{border-color:var(--tint);background:hsl(var(--hue) 55% 55% / 0.26);}
+.choice:active{transform:scale(0.98);}
+.choice-skeleton{display:block;height:38px;width:220px;cursor:default;
+  background:linear-gradient(90deg,var(--tint-soft) 25%,hsl(var(--hue) 55% 55% / 0.3) 50%,var(--tint-soft) 75%);
+  background-size:200% 100%;animation:shimmer 1.2s infinite linear;}
+.choice-skeleton:nth-child(2){width:180px;}
+.choice-skeleton:nth-child(3){width:240px;}
+.choice-skeleton::before{content:none;}
+@keyframes shimmer{from{background-position:200% 0;}to{background-position:-200% 0;}}
+
 /* ─── CRIAÇÃO DO JOGADOR ─────────────────────────────────────────────────────── */
 .create-form{border-radius:16px;}
 .option-btn.selected,.option-btn.active{box-shadow:0 0 0 3px var(--accentglow);}
@@ -162,6 +177,8 @@
   .char-card .tag{font-size:0.66rem;padding:1px 7px;}
   .char-card-edit{width:28px;height:28px;font-size:0.8rem;}
   .session-card{flex-basis:220px;}
+  .choices{max-width:100%;}
+  .choice{font-size:0.95rem;padding:11px 14px;}
 
   /* Janelas viram folhas que sobem de baixo, como nos apps */
   .modal-overlay{align-items:flex-end;}

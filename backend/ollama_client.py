@@ -236,6 +236,7 @@ def _options(settings: Dict, num_predict: Optional[int] = None) -> dict:
         "top_p":          settings["top_p"],
         "min_p":          settings["min_p"],
         "repeat_penalty": settings["repeat_penalty"],
+        "repeat_last_n":  256,   # o padrão do Ollama (64) só olha uma frase para trás e deixa o modelo repetir parágrafos
         "num_ctx":        settings["num_ctx"],
         "num_predict":    num_predict or settings["num_predict"],
     }

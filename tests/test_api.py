@@ -600,3 +600,40 @@ def test_app_installable_on_phone(client):
     sw = client.get("/sw.js")
     assert sw.status_code == 200 and "javascript" in sw.headers["content-type"]
     assert sw.headers["cache-control"] == "no-cache"
+
+
+def test_choices_arrive_after_done_and_survive_reopening(client, services):
+    client.put("/api/settings", json={"auto_choices": True})
+    sid = new_session(client)
+    r = client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": "Oi"})
+    events = sse_events(r)
+    types = [e["type"] for e in events]
+    assert types.index("done") < types.index("choices")
+    options = next(e["options"] for e in events if e["type"] == "choices")
+    assert options == ["Pergunto o nome dela", "Saco a espada", "Ofereço uma bebida"]
+    assert client.get(f"/api/session/{sid}").json()["choices"] == options
+    # Desfazer a troca: as escolhas eram daquela resposta e deixam de valer.
+    client.post("/api/chat/undo", json={"session_id": sid, "character_id": "trama"})
+    assert client.get(f"/api/session/{sid}").json()["choices"] == []
+
+
+def test_opening_message_gets_choices_on_demand(client, services):
+    sid = new_session(client)
+    assert client.post("/api/chat/choices", json={"session_id": sid, "character_id": "trama"}).json() == {"options": []}
+    client.put("/api/settings", json={"auto_choices": True})
+    first = client.post("/api/chat/choices", json={"session_id": sid, "character_id": "trama"}).json()["options"]
+    assert len(first) == 3
+    calls = len(services["chat_calls"])
+    again = client.post("/api/chat/choices", json={"session_id": sid, "character_id": "trama"}).json()["options"]
+    assert again == first and len(services["chat_calls"]) == calls  # guardadas: não gera de novo
+
+
+def test_reply_stuck_in_a_loop_is_cut(client, services):
+    block = 'Ela suspira devagar, olhando a porta trancada. "Vamos lá, me chame Estela."\n\n'
+    services["reply"] = '*Ela sorri.* "Fica."\n\n' + block * 6
+    sid = new_session(client)
+    events = sse_events(client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": "Oi"}))
+    replaced = [e["text"] for e in events if e["type"] == "replace"]
+    assert replaced and replaced[0].count("me chame Estela") == 1
+    saved = client.get(f"/api/session/{sid}").json()["history"][-1]["content"]
+    assert saved == replaced[0]

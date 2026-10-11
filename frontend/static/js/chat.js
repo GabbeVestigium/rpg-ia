@@ -4,8 +4,8 @@ import { api, streamSSE } from './api.js';
 import { state } from './state.js';
 import { $, formatText, toast } from './util.js';
 import {
-  appendLevelUp, appendMessage, characterLabel, refreshActions, removeTypingIndicator,
-  renderChat, scrollToBottom, showTypingIndicator, startEdit,
+  appendLevelUp, appendMessage, characterLabel, clearChoices, dropChoicesLoading, refreshActions,
+  removeTypingIndicator, renderChat, renderChoices, scrollToBottom, showTypingIndicator, startEdit,
 } from './messages.js';
 import { currentLevel, updateCast, updateSidebar } from './sidebar.js';
 import { setMood } from './portrait.js';
@@ -49,6 +49,7 @@ async function resync() {
  * Devolve o texto gerado.
  */
 async function runReply(path, body) {
+  clearChoices();
   setStreaming(true);
   stopSpeaking();
   showTypingIndicator();
@@ -77,18 +78,26 @@ async function runReply(path, body) {
       full += evt.t;
       bubble.innerHTML = formatText(full);
       scrollToBottom();
+    } else if (evt.type === 'replace') {
+      // A resposta entrou em loop: o servidor cortou a repetição e manda o texto certo.
+      full = evt.text;
+      if (bubble) bubble.innerHTML = formatText(full);
     } else if (evt.type === 'error') {
       toast(evt.message, 'error', 8000);
     } else if (evt.type === 'mood') {
       setMood(evt.mood);
     } else if (evt.type === 'inventory') {
       onInventory(evt.changes);
+    } else if (evt.type === 'choices') {
+      state.choices = evt.options;
+      renderChoices(evt.options);
     } else if (evt.type === 'done') {
       finish();
+      if (bubble && state.settings?.auto_choices !== false) renderChoices(null);
     }
   }, controller.signal)
     .catch((e) => { if (e.name !== 'AbortError') toast(e.message, 'error', 8000); })
-    .finally(finish);
+    .finally(() => { finish(); dropChoicesLoading(); });
 
   await finished;
   removeTypingIndicator();
@@ -96,6 +105,31 @@ async function runReply(path, body) {
   if (state.abort === controller) state.abort = null;
   setStreaming(false);
   return full.trim();
+}
+
+/** Escolhas da resposta que já está na tela (abrir a conversa: a primeira fala também ganha botões). */
+export async function loadChoices() {
+  const last = state.history[state.history.length - 1];
+  if (state.choices.length || state.settings?.auto_choices === false || last?.role !== 'assistant') return;
+  const session = state.session;
+  renderChoices(null);
+  try {
+    const res = await api('/api/chat/choices', {
+      method: 'POST', body: { session_id: session, character_id: state.character.id },
+    });
+    // Só mostra se o jogador ainda está na mesma conversa e não respondeu enquanto isso.
+    if (session !== state.session || state.streaming || state.history[state.history.length - 1] !== last) return;
+    state.choices = res.options || [];
+    if (state.choices.length) renderChoices(state.choices);
+  } catch { /* sem escolhas: o jogador escreve */ }
+  dropChoicesLoading();
+}
+
+/** O jogador tocou numa escolha: ela vira a mensagem dele. */
+export function pickChoice(text) {
+  if (state.streaming) return;
+  $('user-input').value = text;
+  sendMessage();
 }
 
 /** Itens que a história deu ou tirou: avisa e atualiza a lateral. */
@@ -150,6 +184,7 @@ async function finishExchange(reply, userText) {
 /** Troca a última resposta por outra versão guardada (delta -1 ou +1). */
 export async function swipeVersion(delta) {
   if (state.streaming) return;
+  clearChoices();
   try {
     const res = await api('/api/chat/swipe', { method: 'POST', body: { session_id: state.session, delta } });
     state.history[state.history.length - 1].content = res.content;
@@ -164,6 +199,7 @@ export function stopStreaming() { state.abort?.abort(); }
 
 export async function undoLast() {
   if (state.streaming) return;
+  clearChoices();
   try {
     const { user_text } = await api('/api/chat/undo', {
       method: 'POST', body: { session_id: state.session, character_id: state.character.id },
@@ -176,7 +212,7 @@ export async function undoLast() {
   }
 }
 
-export function beginEdit(index) { startEdit(index); }
+export function beginEdit(index) { clearChoices(); startEdit(index); }
 
 export async function saveEdit(index) {
   const area = document.querySelector('#messages .edit-area');

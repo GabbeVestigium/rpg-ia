@@ -129,6 +129,8 @@ class SessionData(BaseModel):
     swipes: List[str] = []           # Versões da última resposta (🔄 guarda as anteriores)
     swipe_index: int = 0             # Qual versão está no histórico agora
     swipe_for: int = -1              # Índice da mensagem a que as versões pertencem
+    choices: List[str] = []          # Escolhas sugeridas para a última resposta
+    choices_for: str = ""            # Texto da resposta a que as escolhas pertencem
 
 
 class ChatResponse(BaseModel):

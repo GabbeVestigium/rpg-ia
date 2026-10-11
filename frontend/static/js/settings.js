@@ -28,6 +28,9 @@ function fields(models, voices) {
     { key: 'history_turns', label: 'Turnos recentes enviados inteiros', type: 'number', min: 4, max: 60,
       hint: 'O que passar disso vira resumo. Menos turnos = mais rápido e menos VRAM.' },
 
+    { section: 'Escolhas', key: 'auto_choices', label: 'Sugerir 3 escolhas depois de cada resposta', type: 'checkbox',
+      hint: 'Toque numa delas para responder na hora, ou escreva o que quiser. Gasta uma geração curta a mais por resposta.' },
+
     { section: 'Inventário', key: 'auto_inventory', label: 'Atualizar o inventário conforme a história', type: 'checkbox',
       hint: 'Quando a cena fala de itens ou ouro, o modelo confere o que você ganhou ou perdeu (modos Médio e Completo). Gasta uma geração curta a mais, só nessas cenas.' },
 

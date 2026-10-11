@@ -82,6 +82,38 @@ export function renderChat() {
     state.images.filter((img) => img.at === i + 1).forEach(appendSceneImage);
   });
   refreshActions();
+  if (state.choices.length) renderChoices(state.choices);
+}
+
+// ─── ESCOLHAS ──────────────────────────────────────────────────────────────────
+
+/** Três botões com o que o jogador pode fazer agora. `null` mostra o "pensando" enquanto elas chegam. */
+export function renderChoices(options) {
+  $('choices')?.remove();
+  const box = document.createElement('div');
+  box.id = 'choices';
+  box.className = 'choices';
+  if (options === null) {
+    box.classList.add('loading');
+    box.innerHTML = '<span class="choice choice-skeleton"></span>'.repeat(3);
+  } else {
+    box.innerHTML = options.map((text) =>
+      `<button class="choice" data-action="pick-choice" data-text="${escapeHtml(text)}">${escapeHtml(text)}</button>`).join('');
+  }
+  const box2 = $('messages');
+  const atBottom = box2.scrollHeight - box2.scrollTop - box2.clientHeight < box2.clientHeight;
+  box2.appendChild(box);
+  if (atBottom) scrollToBottom();
+}
+
+export function clearChoices() {
+  state.choices = [];
+  $('choices')?.remove();
+}
+
+/** Tira o "pensando" se as escolhas não vieram (desligadas, erro do modelo). */
+export function dropChoicesLoading() {
+  if ($('choices')?.classList.contains('loading')) $('choices').remove();
 }
 
 /** Recoloca as ações (ouvir, editar, regenerar, desfazer) conforme o estado atual. */

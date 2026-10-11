@@ -4,6 +4,7 @@ import { api } from './api.js';
 import { state } from './state.js';
 import { $, avatarHtml, characterHue, closeModal, escapeHtml, openModal, showScreen, toast } from './util.js';
 import { renderChat } from './messages.js';
+import { loadChoices } from './chat.js';
 import { ATTR_LABELS, setupDiceTable, setupSidebar } from './sidebar.js';
 import { loadPortrait } from './portrait.js';
 import { stopSpeaking } from './tts.js';
@@ -283,6 +284,7 @@ export async function confirmCreatePlayer() {
     state.images = [];
     state.cast = sess.cast || [];
     state.swipe = { index: 0, count: 0 };
+    state.choices = [];
     openChatScreen(playerData.player);
   } catch (e) {
     toast(e.message, 'error', 7000);
@@ -303,6 +305,7 @@ export async function startNewChat(characterId, mode) {
     state.images = [];
     state.cast = data.cast || [];
     state.swipe = { index: 0, count: 0 };
+    state.choices = [];
     openChatScreen(null);
   } catch (e) {
     toast(e.message, 'error');
@@ -322,6 +325,7 @@ export async function continueSession(sessionId) {
     state.images = data.images || [];
     state.cast = data.cast || [];
     state.swipe = data.swipe || { index: 0, count: 0 };
+    state.choices = data.choices || [];
     openChatScreen(data.rpg_state?.player || null);
   } catch (e) {
     toast(e.message, 'error');
@@ -356,5 +360,6 @@ function openChatScreen(player) {
   setupDiceTable(state.mode);
   setupSidebar(state.mode, player, state.cast);
   renderChat();
+  loadChoices();
   $('user-input').focus();
 }
