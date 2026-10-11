@@ -62,3 +62,8 @@ export function togglePanel(panelId) {
 export function closePanels() {
   document.querySelector('.chat-layout')?.classList.remove(...Object.values(PANEL_CLASSES));
 }
+
+// Celular: as ferramentas do chat (Cena, Memória, Voz...) ficam num menu aberto pelo ⋯.
+export function toggleTools(force) {
+  document.getElementById('chat-tools')?.classList.toggle('open', force);
+}

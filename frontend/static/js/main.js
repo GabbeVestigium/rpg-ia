@@ -3,7 +3,7 @@
 import { exportChat, restoreBackup } from './backup.js';
 import * as chat from './chat.js';
 import { deleteCharacter, editCharacter, newCharacter, saveCharacter } from './editor.js';
-import { closePanels, initLayout, togglePanel } from './layout.js';
+import { closePanels, initLayout, togglePanel, toggleTools } from './layout.js';
 import { addLore, deleteLore, openLore, saveLore } from './lorebook.js';
 import { openMemory, saveMemory } from './memory.js';
 import { loadProfile, openProfile, saveProfile } from './profile.js';
@@ -17,6 +17,7 @@ import { $, closeModal, showScreen, toast } from './util.js';
 const actions = {
   // seleção
   'open-mode': (el) => screens.openModeModal(el.dataset.id),
+  'filter-tag': (el) => screens.filterByTag(el.dataset.tag),
   'edit-character': (el, e) => { e.stopPropagation(); editCharacter(el.dataset.id); },
   'new-character': () => newCharacter(),
   'continue-session': (el) => screens.continueSession(el.dataset.id),
@@ -33,6 +34,7 @@ const actions = {
   'go-back': () => { closePanels(); screens.backToSelect(); },
   'toggle-panel': (el) => togglePanel(el.dataset.panel),
   'close-panels': () => closePanels(),
+  'toggle-tools': () => toggleTools(),
   'new-chat': () => {
     if (confirm('Iniciar nova conversa com este personagem?')) screens.openModeModal(state.character.id);
   },
@@ -75,6 +77,8 @@ const actions = {
 
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-action]');
+  // O menu ⋯ fecha ao escolher uma ferramenta ou ao tocar fora dele.
+  if (el?.dataset.action !== 'toggle-tools') toggleTools(false);
   if (!el) {
     // Celular: tocar numa mensagem mostra as ações dela (ouvir, editar...).
     const msg = e.target.closest('#messages .message[data-index]');

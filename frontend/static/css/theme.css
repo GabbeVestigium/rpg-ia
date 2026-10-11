@@ -1,0 +1,197 @@
+/* ─── VISUAL v4 ──────────────────────────────────────────────────────────────────
+   Camada por cima do style.css: galeria com capas, cor própria de cada personagem
+   (--hue, vinda do id), chat com o clima do personagem e telas pensadas para o celular. */
+
+:root{
+  --hue:265;
+  --tint:hsl(var(--hue) 62% 62%);
+  --tint-soft:hsl(var(--hue) 55% 55% / 0.16);
+  --tint-line:hsl(var(--hue) 55% 60% / 0.32);
+}
+.char-card,.session-card,#modal-mode,#screen-chat{--tint:hsl(var(--hue) 62% 66%);--tint-soft:hsl(var(--hue) 55% 55% / 0.16);--tint-line:hsl(var(--hue) 55% 60% / 0.32);}
+
+/* ─── TELA INICIAL ────────────────────────────────────────────────────────────── */
+#screen-select{flex-direction:column;align-items:stretch;padding:0;overflow-y:auto;
+  background:radial-gradient(ellipse 80% 50% at 50% -10%,#1d1533 0%,var(--bg) 70%);}
+.home-bar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:12px;
+  padding:12px 24px;padding-top:max(12px,env(safe-area-inset-top));
+  background:rgba(10,10,15,0.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--border);}
+.home-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.1rem;letter-spacing:1px;white-space:nowrap;}
+.home-logo{width:34px;height:34px;border-radius:9px;display:block;}
+.home-bar .status-bar{margin-left:auto;padding:6px 12px;border-radius:999px;font-size:0.78rem;min-width:0;max-width:320px;}
+.home-bar #status-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.home-actions{display:flex;gap:8px;}
+.icon-btn{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 12px;border-radius:10px;background:var(--bg3);
+  border:1px solid var(--border);color:var(--text);cursor:pointer;font-size:1rem;transition:border-color .15s,background .15s;}
+.icon-btn:hover{border-color:var(--accent);background:var(--bg4);}
+.icon-btn-label{font-size:0.82rem;color:var(--text2);}
+
+.select-container{max-width:1180px;margin:0 auto;padding:28px 24px 56px;gap:30px;}
+.home-hero h1{font-size:1.9rem;font-weight:700;line-height:1.25;
+  background:linear-gradient(90deg,#fff 0%,#cdb8ff 100%);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.home-hero .subtitle{margin-top:6px;color:var(--text2);font-size:0.95rem;}
+.home-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;}
+.home-section-title{font-size:0.8rem;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:1.5px;}
+.saved-sessions-section .home-section-title{margin-bottom:12px;}
+.btn-create{background:linear-gradient(135deg,var(--accent),#a272f0);color:#fff;border:none;border-radius:999px;padding:8px 16px;
+  font-weight:600;font-size:0.85rem;cursor:pointer;box-shadow:0 4px 18px var(--accentglow);white-space:nowrap;}
+.btn-create:hover{filter:brightness(1.1);}
+
+/* Continuar: fileira que rola para o lado */
+.saved-sessions-list{flex-direction:row;overflow-x:auto;gap:12px;padding-bottom:6px;scroll-snap-type:x mandatory;scrollbar-width:none;}
+.saved-sessions-list::-webkit-scrollbar{display:none;}
+.session-card{flex:0 0 250px;scroll-snap-align:start;gap:12px;justify-content:flex-start;padding:12px;border-radius:14px;
+  background:linear-gradient(135deg,var(--tint-soft),var(--bg3) 70%);border:1px solid var(--tint-line);}
+.session-card:hover{border-color:var(--tint);}
+.session-card-avatar{width:46px;height:46px;flex-shrink:0;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;
+  font-size:1.5rem;background:radial-gradient(circle at 30% 30%,hsl(var(--hue) 50% 38%),hsl(var(--hue) 45% 16%));}
+.session-card-avatar img{width:100%;height:100%;object-fit:cover;object-position:top;}
+.session-card-info{flex:1;min-width:0;}
+.session-card-name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.session-card-meta{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* Filtro de gênero */
+.tag-filter{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px;scrollbar-width:none;}
+.tag-filter::-webkit-scrollbar{display:none;}
+.tag-filter:empty{display:none;}
+.tag-chip{flex-shrink:0;background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:999px;padding:6px 14px;
+  font-size:0.82rem;cursor:pointer;white-space:nowrap;transition:all .15s;}
+.tag-chip:hover{border-color:var(--borderl);color:var(--text);}
+.tag-chip.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+
+/* Galeria: capa grande em cima, texto curto embaixo */
+.character-grid{grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:18px;}
+.char-card{padding:0;display:flex;flex-direction:column;border-radius:16px;background:var(--bg3);border:1px solid var(--border);}
+.char-card::before,.char-card::after{display:none;}
+.char-card:hover{border-color:var(--tint);transform:translateY(-3px);box-shadow:0 12px 34px hsl(var(--hue) 60% 40% / 0.28);}
+.char-card-cover{position:relative;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;overflow:hidden;
+  background:radial-gradient(circle at 50% 35%,hsl(var(--hue) 55% 40%) 0%,hsl(var(--hue) 50% 20%) 55%,hsl(var(--hue) 40% 10%) 100%);}
+.char-card-cover::after{content:'';position:absolute;inset:auto 0 0 0;height:45%;background:linear-gradient(transparent,var(--bg3));}
+.char-card.has-portrait .char-card-cover{aspect-ratio:3/4;}
+.char-card-avatar{font-size:4.2rem;margin:0;filter:drop-shadow(0 8px 18px rgba(0,0,0,0.55));transition:transform .25s;}
+.char-card:hover .char-card-avatar{transform:scale(1.08);}
+.char-card-img{width:100%;height:100%;border-radius:0;margin:0;border:none;object-fit:cover;object-position:top;}
+.char-card-body{padding:4px 16px 16px;display:flex;flex-direction:column;gap:6px;flex:1;}
+.char-card-world{color:var(--tint);margin:0;font-size:0.7rem;font-weight:600;}
+.char-card-name{font-size:1.02rem;font-weight:700;margin:0;line-height:1.3;}
+.char-card-desc{-webkit-line-clamp:2;font-size:0.84rem;}
+.char-card-tags{margin-top:auto;padding-top:4px;flex-wrap:nowrap;overflow:hidden;}
+.char-card .tag{white-space:nowrap;background:var(--tint-soft);border-color:var(--tint-line);color:var(--tint);}
+.char-card-edit{top:10px;right:10px;background:rgba(10,10,15,0.6);backdrop-filter:blur(6px);border-radius:50%;width:32px;height:32px;padding:0;}
+
+/* ─── ESCOLHA DO MODO: ficha do personagem ────────────────────────────────────── */
+#modal-mode .modal{padding:0;overflow-x:hidden;}
+#modal-mode .modal > :not(.mode-cover){margin-left:24px;margin-right:24px;}
+.mode-cover{position:relative;height:120px;margin-bottom:46px;
+  background:radial-gradient(circle at 25% 30%,hsl(var(--hue) 55% 42%),hsl(var(--hue) 45% 14%) 75%);}
+.mode-cover .modal-avatar{position:absolute;left:24px;bottom:-38px;width:84px;height:84px;border-radius:50%;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;font-size:2.8rem;border:3px solid var(--bg3);
+  background:radial-gradient(circle at 30% 30%,hsl(var(--hue) 50% 38%),hsl(var(--hue) 45% 16%));}
+.mode-cover .modal-avatar img{width:100%;height:100%;object-fit:cover;object-position:top;}
+.mode-cover-info{position:absolute;left:122px;right:20px;bottom:-40px;}
+.modal-char-name{font-size:1.25rem;font-weight:700;line-height:1.25;}
+.modal-char-world{font-size:0.72rem;color:var(--tint);text-transform:uppercase;letter-spacing:1px;font-weight:600;}
+.mode-summary{color:var(--text2);font-size:0.9rem;line-height:1.55;margin-bottom:10px;}
+.mode-summary:empty,.mode-scenario:empty{display:none;}
+.mode-scenario{font-size:0.85rem;font-style:italic;color:var(--text2);padding:10px 14px;border-left:3px solid var(--tint);
+  background:var(--tint-soft);border-radius:0 10px 10px 0;margin-bottom:10px;}
+.mode-scenario strong{display:block;font-style:normal;font-size:0.68rem;letter-spacing:1px;text-transform:uppercase;color:var(--tint);margin-bottom:2px;}
+#modal-char-tags{margin:0 0 4px;}
+#modal-char-tags .tag{background:var(--tint-soft);border-color:var(--tint-line);color:var(--tint);}
+.mode-question{margin-top:18px;margin-bottom:10px;font-weight:600;color:var(--text);}
+#modal-mode .mode-cards{margin-bottom:12px;}
+#modal-mode .btn-cancel{margin-bottom:22px;width:calc(100% - 48px);}
+#modal-mode .mode-card{display:grid;grid-template-columns:auto 1fr;column-gap:14px;align-items:center;padding:14px 16px;}
+#modal-mode .mode-icon{grid-row:span 3;font-size:1.8rem;margin:0;}
+#modal-mode .mode-card:hover{border-color:var(--tint);}
+
+/* ─── CHAT ────────────────────────────────────────────────────────────────────── */
+#screen-chat{background:radial-gradient(ellipse 90% 60% at 50% 0%,hsl(var(--hue) 45% 13%) 0%,var(--bg) 70%);}
+#screen-chat .chat-main,#screen-chat .messages{background:transparent;}
+#screen-chat .char-panel{background:linear-gradient(180deg,hsl(var(--hue) 40% 12%),var(--bg2) 60%);}
+/* Fundos sólidos (sem blur): o blur por trás pisca ou some em alguns celulares. */
+.chat-topbar{position:relative;z-index:30;background:rgba(17,17,24,0.94);}
+.chat-topbar-info{flex-direction:row;justify-content:center;gap:10px;min-width:0;}
+.topbar-avatar{width:36px;height:36px;flex-shrink:0;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;
+  font-size:1.2rem;background:radial-gradient(circle at 30% 30%,hsl(var(--hue) 50% 38%),hsl(var(--hue) 45% 16%));border:1px solid var(--tint-line);}
+.topbar-avatar img{width:100%;height:100%;object-fit:cover;object-position:top;}
+.topbar-text{display:flex;flex-direction:column;min-width:0;}
+.topbar-text #topbar-char-name{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+.message.assistant .message-header{color:var(--tint);font-weight:600;}
+.message.assistant .bubble{background:rgba(24,22,36,0.88);border-color:var(--tint-line);}
+.message.user .bubble{background:linear-gradient(135deg,#2b2350,#22305a);border-color:#3c3a74;color:#e6e4ff;}
+.dialogue{color:#fff;}
+.bubble em{color:#a9a6c4;}
+.scenario-card{background:var(--tint-soft);border-color:var(--tint-line);border-left-color:var(--tint);}
+.scenario-label{color:var(--tint);}
+
+.input-area{background:rgba(17,17,24,0.92);}
+.input-wrapper{border-radius:24px;padding:6px 6px 6px 16px;}
+#send-btn,#stop-btn{width:40px;height:40px;border-radius:50%;}
+#send-btn{background:linear-gradient(135deg,var(--accent),#a272f0);}
+
+/* ─── CRIAÇÃO DO JOGADOR ─────────────────────────────────────────────────────── */
+.create-form{border-radius:16px;}
+.option-btn.selected,.option-btn.active{box-shadow:0 0 0 3px var(--accentglow);}
+
+/* ─── TOQUE ───────────────────────────────────────────────────────────────────── */
+@media (hover:none){
+  .char-card-edit{opacity:1;}
+  .char-card:hover{transform:none;}
+}
+
+/* ─── CELULAR ─────────────────────────────────────────────────────────────────── */
+@media (max-width:768px){
+  .home-bar{padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top));gap:10px;}
+  .home-brand > span{display:none;}
+  .home-bar .status-bar{max-width:none;flex:1;}
+  .icon-btn{width:38px;justify-content:center;padding:0;}
+  .icon-btn-label{display:none;}
+  .select-container{padding:20px 14px 40px;gap:24px;}
+  .home-hero h1{font-size:1.4rem;}
+  .home-hero .subtitle{font-size:0.88rem;}
+
+  .character-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+  .char-card{border-radius:14px;}
+  .char-card-avatar{font-size:3.2rem;}
+  .char-card-body{padding:2px 12px 12px;gap:4px;}
+  .char-card-name{font-size:0.92rem;}
+  .char-card-age{display:none;}
+  .char-card-desc{font-size:0.78rem;line-height:1.45;}
+  .char-card .tag{font-size:0.66rem;padding:1px 7px;}
+  .char-card-edit{width:28px;height:28px;font-size:0.8rem;}
+  .session-card{flex-basis:220px;}
+
+  /* Janelas viram folhas que sobem de baixo, como nos apps */
+  .modal-overlay{align-items:flex-end;}
+  .modal,.modal-wide{width:100%;max-height:92dvh;border-radius:20px 20px 0 0;border-bottom:none;
+    padding-bottom:max(20px,env(safe-area-inset-bottom));animation:sheetUp .25s ease;}
+  #modal-mode .modal > :not(.mode-cover){margin-left:16px;margin-right:16px;}
+  #modal-mode .btn-cancel{width:calc(100% - 32px);}
+  .mode-cover{height:100px;}
+  #modal-mode .mode-features{display:none;}
+  #modal-mode .mode-desc{font-size:0.82rem;}
+  .mode-cover .modal-avatar{left:16px;width:76px;height:76px;bottom:-34px;}
+  .mode-cover-info{left:104px;bottom:-38px;}
+
+  /* Chat: topo compacto; ferramentas num menu ⋯ */
+  .chat-topbar{flex-wrap:nowrap;}
+  .back-label{display:none;}
+  .btn-back-sm{font-size:1.1rem;padding:4px 12px;}
+  .chat-topbar-info{flex:1;justify-content:flex-start;cursor:pointer;}
+  .chat-tools{display:none;position:absolute;top:calc(100% + 6px);right:10px;width:220px;order:0;flex-direction:column;align-items:stretch;
+    gap:2px;padding:6px;overflow:visible;background:var(--bg3);border:1px solid var(--borderl);border-radius:14px;
+    box-shadow:0 16px 40px rgba(0,0,0,0.6);animation:fadeSlide .15s ease;}
+  .chat-tools.open{display:flex;}
+  .chat-tools .btn-secondary-sm{border:none;text-align:left;padding:11px 12px;font-size:0.95rem;color:var(--text);border-radius:10px;}
+  .chat-tools .btn-secondary-sm:hover,.chat-tools .btn-secondary-sm:active{background:var(--bg4);}
+  .chat-tools [data-action="open-settings"]::after{content:' Configurações';}
+
+  /* Criação do jogador */
+  #screen-create{padding:16px 12px 32px;}
+  .create-header h2{font-size:1.15rem;}
+  .create-form{padding:18px 16px;gap:20px;}
+  .create-form .form-row{flex-direction:column;gap:20px;}
+}
+@keyframes sheetUp{from{transform:translateY(40px);opacity:0;}to{transform:none;opacity:1;}}

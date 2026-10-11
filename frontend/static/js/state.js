@@ -16,4 +16,5 @@ export const state = {
   settings: null,
   profile: null,        // { name, age, appearance, about } salvo em Meu perfil
   sdAvailable: false,
+  tagFilter: '',        // gênero escolhido na tela inicial ('' = todos)
 };
