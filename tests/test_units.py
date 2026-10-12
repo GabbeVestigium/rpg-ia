@@ -222,7 +222,7 @@ def test_adventure_becomes_group_character_with_narrator():
     assert c.group and c.name == "A Biblioteca que Sussurra"
     assert [m.name for m in c.cast] == ["Dona", "Íris"] and c.cast[1].id == "iris"
     assert c.tags[0] == "mistério" and "aventura" in c.tags and c.tags.count("mistério") == 1
-    assert "Íris** (27)" in c.description and "Você: O zelador novo" in c.description
+    assert "Íris** (27)" in c.description and "Papel do jogador: O zelador novo" in c.description
     assert "narrador" in c.personality and c.first_message.startswith("*O relógio")
 
 

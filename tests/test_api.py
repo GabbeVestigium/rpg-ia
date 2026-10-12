@@ -676,8 +676,9 @@ def test_reply_gets_turn_reminder_without_saving_it(client, services):
                                    "message": "Me esperaram aqui para quê?"})
     call = services["chat_calls"][-1]
     last = call["messages"][-1]["content"]
-    assert last.startswith("Me esperaram aqui para quê?") and "Lembrete" in last
-    assert "No máximo 2 personagens" in last and "Me esperaram aqui para quê?" in last.split("Lembrete")[1]
+    assert last.startswith("Me esperaram aqui para quê?") and "(OOC:" in last
+    # O lembrete não cita a fala do jogador (modelos pequenos copiavam a citação na resposta).
+    assert "No máximo 2 personagens" in last and last.count("Me esperaram aqui para quê?") == 1
     assert call["options"]["temperature"] <= 0.7  # cena de grupo: menos invenção
     saved = client.get(f"/api/session/{sid}").json()["history"]
     assert saved[-2]["content"] == "Me esperaram aqui para quê?"
@@ -687,4 +688,5 @@ def test_single_character_keeps_chosen_temperature(client, services):
     sid = client.post("/api/session/new", json={"character_id": "trama"}).json()["session_id"]
     client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": "Oi"})
     call = services["chat_calls"][-1]
-    assert call["options"]["temperature"] == 0.85 and "No máximo 2" not in call["messages"][-1]["content"]
+    from backend.settings_manager import DEFAULTS
+    assert call["options"]["temperature"] == DEFAULTS["temperature"] and "No máximo 2" not in call["messages"][-1]["content"]

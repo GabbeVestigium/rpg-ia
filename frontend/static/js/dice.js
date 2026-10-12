@@ -228,7 +228,7 @@ function showDiceRoll(rollResult, onComplete) {
       const sign = modifier >= 0 ? `+${modifier}` : `${modifier}`;
       formula.innerHTML = `
         <span class="dice-nat">d20 = ${natural}</span>
-        ${modifier !== 0 ? `<span class="dice-sep"> ${sign >= '+0' ? '+' : ''}${modifier} </span><span class="dice-total">= ${final}</span>` : ''}
+        ${modifier !== 0 ? `<span class="dice-sep"> ${sign} </span><span class="dice-total">= ${final}</span>` : ''}
       `;
       outcomeEl.textContent  = cfg.label;
       outcomeEl.style.color  = cfg.textColor;

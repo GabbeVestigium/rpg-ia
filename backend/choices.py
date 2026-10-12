@@ -19,16 +19,16 @@ MAX_LEN = 90
 _SYSTEM = (
     "Você sugere as próximas jogadas de um roleplay. Leia a cena e responda SOMENTE um JSON, sem texto extra: "
     'uma lista com 3 textos curtos, por exemplo ["...", "...", "..."]. '
-    "Cada texto é algo que o JOGADOR faz ou diz agora, escrito em primeira pessoa, em português do Brasil, "
-    "com no máximo 12 palavras. As três precisam levar a história para caminhos diferentes: uma cuidadosa ou "
-    "curiosa, uma ousada, e uma inesperada. Use o que acabou de acontecer na cena e cite pelo nome as pessoas, "
-    "lugares e objetos que aparecem nela; nada vago como \"quero ver aquele lugar\". Não escreva pelo outro "
-    "personagem, não numere e não explique."
+    "Cada texto é algo que o jogador faz ou diz agora, escrito em primeira pessoa, em português do Brasil, "
+    "com no máximo 12 palavras. As três levam a história para três caminhos diferentes. Use o que acabou de "
+    "acontecer na cena e cite pelo nome as pessoas, lugares e objetos que aparecem nela; nada vago como "
+    "\"quero ver aquele lugar\". Não escreva pelo outro personagem, não numere, não dê títulos e não explique."
 )
 
 
-def parse_choices(raw: str) -> List[str]:
-    """Extrai a lista do texto do modelo (que às vezes vem com texto em volta) e limpa cada opção."""
+def parse_choices(raw: str, character_name: str = "") -> List[str]:
+    """Extrai a lista do texto do modelo (que às vezes vem com texto em volta, cortada ou em linhas)
+    e limpa cada opção."""
     start, end = raw.find("["), raw.rfind("]")
     items: list = []
     if 0 <= start < end:
@@ -38,16 +38,27 @@ def parse_choices(raw: str) -> List[str]:
         except json.JSONDecodeError:
             items = []
     if not items:
-        # Plano B: uma opção por linha ("1. ...", "- ...").
+        # Plano B: textos entre aspas (JSON quebrado ou cortado no meio).
+        items = re.findall(r'"([^"\n]{3,})"', raw)
+    if not items:
+        # Plano C: uma opção por linha ("1. ...", "- ...").
         items = [line for line in raw.splitlines() if re.match(r"^\s*(\d+[.)]|[-*•])\s+\S", line)]
 
     seen, result = set(), []
     for item in items:
-        text = re.sub(r"^\s*(\d+[.)]|[-*•])\s*", "", str(item or ""))
+        if isinstance(item, dict):   # {"texto": "..."}: fica com o primeiro valor de texto
+            item = next((v for v in item.values() if isinstance(v, str)), "")
+        text = re.sub(r"^\s*(\d+[.)]|[-•])\s*", "", str(item or "")).replace("*", "")
         text = re.sub(r"\s+", " ", text).strip(" \"'“”")
+        if character_name and text.lower().startswith(character_name.lower() + ":"):
+            continue   # fala do outro personagem, não do jogador
+        # Rótulo curto na frente ("Ousada: ...", "Opção 1: ..."): sai, se sobrar texto.
+        unlabeled = re.sub(r"^[\wÀ-ú]+( (ou|\d+) [\wÀ-ú]+| \d+)?\s*:\s*", "", text)
+        if len(unlabeled) >= 3:
+            text = unlabeled
         if len(text) > MAX_LEN:
             text = text[:MAX_LEN].rsplit(" ", 1)[0] + "…"
-        if len(text) >= 3 and text.lower() not in seen:
+        if len(text) >= 3 and not text.endswith(":") and text.lower() not in seen:
             seen.add(text.lower())
             result.append(text)
     return result[:COUNT]
@@ -55,8 +66,8 @@ def parse_choices(raw: str) -> List[str]:
 
 async def suggest_choices(character_name: str, last_user: str, reply: str) -> List[str]:
     scene = (f"Jogador: {last_user.strip()}\n\n" if last_user.strip() else "") + f"{character_name}: {reply.strip()}"
-    raw = await complete(scene[-3000:], system=_SYSTEM, num_predict=200, temperature=0.8)
-    return parse_choices(raw)
+    raw = await complete(scene[-3000:], system=_SYSTEM, num_predict=300, temperature=0.8)
+    return parse_choices(raw, character_name)
 
 
 def remember_choices(session: SessionData, choices: List[str]) -> None:

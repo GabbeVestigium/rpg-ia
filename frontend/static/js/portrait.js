@@ -5,13 +5,27 @@ import { state } from './state.js';
 import { $, toast } from './util.js';
 import { appendSceneImage } from './messages.js';
 
+const SD_HINT = 'Imagens precisam do Stable Diffusion (Automatic1111) rodando com --api. É opcional: veja INSTALL_SD.md.';
+
 export async function refreshSdStatus() {
   try {
     state.sdAvailable = (await api('/api/sd/status')).available;
   } catch {
     state.sdAvailable = false;
   }
+  // Sem SD os botões de imagem ficam apagados, com a dica no lugar do erro.
+  Object.entries({ 'btn-scene': 'Gerar imagem da cena atual', 'btn-generate-portrait': '' }).forEach(([id, title]) => {
+    $(id).classList.toggle('sd-off', !state.sdAvailable);
+    $(id).title = state.sdAvailable ? title : SD_HINT;
+  });
   return state.sdAvailable;
+}
+
+/** Confere o SD na hora do clique; offline, explica em vez de dar erro. */
+async function sdReady() {
+  if (await refreshSdStatus()) return true;
+  toast(SD_HINT, 'info', 8000);
+  return false;
 }
 
 export async function loadPortrait(charId) {
@@ -25,6 +39,7 @@ export async function loadPortrait(charId) {
     btn.style.display = canGenerate ? 'flex' : 'none';
   };
 
+  setBusy(false);   // geração de outra conversa não deixa a tela travada
   state.portraitUrl = null;   // não herda o retrato do personagem anterior se a consulta falhar
   state.expressions = [];
   try {
@@ -42,7 +57,8 @@ export async function loadPortrait(charId) {
       img.src = `${data.image_path}?t=${Date.now()}`;
       await refreshSdStatus();
     } else {
-      showPlaceholder(await refreshSdStatus());
+      await refreshSdStatus();
+      showPlaceholder(true);   // offline, o botão aparece apagado com a dica
     }
   } catch {
     showPlaceholder(false);
@@ -99,26 +115,26 @@ function renderExpressionChips() {
 export async function generateExpressions() {
   if (!state.character || state.character.group) return;
   const missing = state.allExpressions.filter((e) => !state.expressions.includes(e));
-  if (!missing.length) return;
-  if (!(await refreshSdStatus())) {
-    toast('Stable Diffusion offline. Inicie o Automatic1111 com --api --medvram --xformers.', 'error', 8000);
-    return;
-  }
+  if (!missing.length || !(await sdReady())) return;
+  const id = state.character.id;
+  const session = state.session;
+  const stale = () => state.session !== session;
   try {
     for (const [i, expression] of missing.entries()) {
+      if (stale()) return;
       setBusy(true, `Expressão ${i + 1} de ${missing.length}: ${EXPRESSION_LABELS[expression]?.[1] || expression}...`);
       await api('/api/sd/generate-expression', {
-        method: 'POST', body: { character_id: state.character.id, expression },
+        method: 'POST', body: { character_id: id, expression },
       });
+      if (stale()) return;
       state.expressions.push(expression);
       renderExpressionChips();
     }
     toast('Expressões prontas. O retrato muda conforme o clima da conversa.', 'success');
   } catch (e) {
-    toast(e.message, 'error', 8000);
+    if (!stale()) toast(e.message, 'error', 8000);
   } finally {
-    setBusy(false);
-    renderExpressionChips();
+    if (!stale()) { setBusy(false); renderExpressionChips(); }
   }
 }
 
@@ -131,34 +147,37 @@ function setBusy(on, text) {
 }
 
 export async function generatePortrait() {
-  if (!state.character) return;
-  if (!(await refreshSdStatus())) {
-    toast('Stable Diffusion offline. Inicie o Automatic1111 com --api --medvram --xformers.', 'error', 8000);
-    return;
-  }
+  if (!state.character || !(await sdReady())) return;
+  const id = state.character.id;
+  const session = state.session;
+  const stale = () => state.session !== session;
   $('btn-generate-portrait').style.display = 'none';
   setBusy(true, 'Gerando retrato...');
   try {
-    await api('/api/sd/generate-portrait', { method: 'POST', body: { character_id: state.character.id } });
-    await loadPortrait(state.character.id);
+    await api('/api/sd/generate-portrait', { method: 'POST', body: { character_id: id } });
+    if (!stale()) await loadPortrait(id);
   } catch (e) {
-    toast(e.message, 'error', 8000);
-    $('btn-generate-portrait').style.display = 'flex';
+    if (!stale()) {
+      toast(e.message, 'error', 8000);
+      $('btn-generate-portrait').style.display = 'flex';
+    }
   } finally {
-    setBusy(false);
+    if (!stale()) setBusy(false);
   }
 }
 
 export async function generateScene() {
-  if (!state.session || state.streaming) return;
+  if (!state.session || state.streaming || !(await sdReady())) return;
+  const session = state.session;
   setBusy(true, 'Gerando cena...');
   try {
-    const image = await api('/api/scene/generate', { method: 'POST', body: { session_id: state.session } });
+    const image = await api('/api/scene/generate', { method: 'POST', body: { session_id: session } });
+    if (session !== state.session) return;   // a cena fica salva na conversa de origem
     state.images.push(image);
     appendSceneImage(image);
   } catch (e) {
-    toast(e.message, 'error', 8000);
+    if (session === state.session) toast(e.message, 'error', 8000);
   } finally {
-    setBusy(false);
+    if (session === state.session) setBusy(false);
   }
 }

@@ -16,7 +16,7 @@ self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
 
 self.addEventListener('fetch', (e) => {
   if (e.request.mode !== 'navigate') return;
-  e.respondWith(fetch(e.request).catch(() => new Response(OFFLINE_HTML, {
-    headers: { 'Content-Type': 'text/html; charset=utf-8' },
-  })));
+  const offline = () => new Response(OFFLINE_HTML, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+  // PC ligado com o RPG IA fechado: o Tailscale responde 502 em vez de falhar a conexão.
+  e.respondWith(fetch(e.request).then((res) => (res.status >= 502 && res.status <= 504 ? offline() : res), offline));
 });

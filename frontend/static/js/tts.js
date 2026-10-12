@@ -5,6 +5,8 @@ import { state } from './state.js';
 import { toast } from './util.js';
 
 let audio = null;
+let speakId = 0;          // cada stopSpeaking invalida a fala que ainda está carregando
+let piperWarned = false;  // avisa da troca para a voz do navegador uma vez só
 
 /** Texto a falar: com dialogueOnly, pula as ações entre *asteriscos*. */
 export function speakable(text, dialogueOnly) {
@@ -16,6 +18,7 @@ export function speakable(text, dialogueOnly) {
 export function stopSpeaking() {
   if ('speechSynthesis' in window) window.speechSynthesis.cancel();
   if (audio) { audio.pause(); audio = null; }
+  speakId++;
 }
 
 export function browserVoices() {
@@ -26,6 +29,7 @@ export async function speak(text) {
   const s = state.settings;
   if (!s || s.tts_engine === 'off') return;
   stopSpeaking();
+  const id = speakId;
 
   if (s.tts_engine === 'piper') {
     try {
@@ -38,12 +42,15 @@ export async function speak(text) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.detail || `Erro ${res.status}`);
       }
-      audio = new Audio(URL.createObjectURL(await res.blob()));
+      const blob = await res.blob();
+      if (id !== speakId) return;   // trocou de conversa ou mandou parar enquanto carregava
+      audio = new Audio(URL.createObjectURL(blob));
       await audio.play();
+      return;
     } catch (e) {
-      toast(`Voz: ${e.message}`, 'error');
+      if (id !== speakId) return;
+      if (!piperWarned) { piperWarned = true; toast(`Voz: ${e.message} Usando a voz do navegador.`, 'info', 8000); }
     }
-    return;
   }
 
   const spoken = speakable(text, s.tts_dialogue_only);

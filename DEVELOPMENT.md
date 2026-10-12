@@ -1,11 +1,12 @@
 > **Nota:** este arquivo é o histórico das primeiras versões (v1 e v2). A arquitetura atual (v3: routers,
 > módulos ES, memória, cenas, voz, personagens de grupo) está descrita em `AI_CONTEXT.md` e no `README.md`.
 > Nomes de arquivos e rotas abaixo (como `frontend/static/js/app.js`) podem não existir mais.
+> As menções ao `deepseek-r1:7b` são históricas: hoje o modelo é escolhido nas Configurações (ver README).
 
 # Histórico de Desenvolvimento — RPG-IA
 
 ## Visão Geral
-Sistema de RPG com IA local (Ollama + deepseek-r1:7b), interface web estilo visual novel, sem censura, 100% offline.
+Sistema de RPG com IA local (Ollama com modelo escolhido nas Configurações), interface web estilo visual novel, sem censura, 100% offline.
 
 ---
 
@@ -184,7 +185,7 @@ powershell -ExecutionPolicy Bypass -File start.ps1
 
 ### Instalar/Atualizar modelo Ollama
 ```powershell
-ollama pull deepseek-r1:7b
+ollama pull llama3.1:8b
 ```
 
 ### Recriar ambiente virtual
@@ -201,7 +202,7 @@ pip install -r requirements.txt
 ollama list
 
 # Testar modelo manualmente
-ollama run deepseek-r1:7b "Olá, você está funcionando?"
+ollama run llama3.1:8b "Olá, você está funcionando?"
 
 # Ver logs do Ollama (se travar)
 # Windows: Event Viewer > Application Logs

@@ -19,7 +19,8 @@ export function formatText(text) {
   return escapeHtml(text)
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
     .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-    .replace(/&quot;(.+?)&quot;/g, '<span class="dialogue">&quot;$1&quot;</span>');
+    .replace(/&quot;(.+?)&quot;/g, '<span class="dialogue">&quot;$1&quot;</span>')
+    .replace(/“([^”]+)”/g, '<span class="dialogue">“$1”</span>');
 }
 
 export function toast(message, kind = 'info', ms = 4500) {

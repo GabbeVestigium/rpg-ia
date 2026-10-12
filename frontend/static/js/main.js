@@ -106,6 +106,13 @@ $('backup-file').addEventListener('change', (e) => {
   e.target.value = '';
 });
 
+// Cartões clicáveis (<div data-action>) respondem a Enter e Espaço como botões.
+document.addEventListener('keydown', (e) => {
+  if ((e.key !== 'Enter' && e.key !== ' ') || !e.target.matches('[data-action]:not(button)')) return;
+  e.preventDefault();   // Espaço rolaria a página
+  e.target.click();
+});
+
 // Fecha modais com Esc.
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
@@ -125,6 +132,11 @@ async function init() {
 }
 
 init().catch((e) => toast(`Erro ao iniciar: ${e.message}`, 'error'));
+
+// O Ollama (ou o PC) pode cair e voltar com a página aberta: rechecagem periódica e ao voltar para o app.
+setInterval(() => { if (!document.hidden) screens.checkStatus(); }, 30000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) screens.checkStatus(); });
+window.addEventListener('online', () => screens.checkStatus());
 
 // Deixa o app instalável na tela inicial do celular. Só funciona em https ou em 127.0.0.1.
 if ('serviceWorker' in navigator) {
