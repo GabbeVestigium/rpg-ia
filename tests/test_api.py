@@ -668,3 +668,23 @@ def test_adventure_idea_with_minor_is_refused_before_the_model(client, services)
 def test_adventure_options_list_genres_and_surprises(client):
     data = client.get("/api/adventure/options").json()
     assert "Isekai" in data["genres"] and len(data["surprises"]) >= 5
+
+
+def test_reply_gets_turn_reminder_without_saving_it(client, services):
+    sid = client.post("/api/session/new", json={"character_id": "mesa-javali"}).json()["session_id"]
+    client.post("/api/chat", json={"session_id": sid, "character_id": "mesa-javali",
+                                   "message": "Me esperaram aqui para quê?"})
+    call = services["chat_calls"][-1]
+    last = call["messages"][-1]["content"]
+    assert last.startswith("Me esperaram aqui para quê?") and "Lembrete" in last
+    assert "No máximo 2 personagens" in last and "Me esperaram aqui para quê?" in last.split("Lembrete")[1]
+    assert call["options"]["temperature"] <= 0.7  # cena de grupo: menos invenção
+    saved = client.get(f"/api/session/{sid}").json()["history"]
+    assert saved[-2]["content"] == "Me esperaram aqui para quê?"
+
+
+def test_single_character_keeps_chosen_temperature(client, services):
+    sid = client.post("/api/session/new", json={"character_id": "trama"}).json()["session_id"]
+    client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": "Oi"})
+    call = services["chat_calls"][-1]
+    assert call["options"]["temperature"] == 0.85 and "No máximo 2" not in call["messages"][-1]["content"]

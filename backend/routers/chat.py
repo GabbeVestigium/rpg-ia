@@ -27,9 +27,11 @@ from backend.loop_guard import find_loop
 from backend.lorebook import select_lore
 from backend.mood import detect_mood
 from backend.memory import history_budget, prompt_window, update_summary, window_start
-from backend.models import ChatRequest, EditMessageRequest, MessageRole, RegenerateRequest, SwipeRequest
+from backend.models import ChatRequest, EditMessageRequest, Message, MessageRole, RegenerateRequest, SwipeRequest
 from backend.profile_manager import load_profile
-from backend.ollama_client import OllamaError, build_system_prompt, stream_chat
+from backend.ollama_client import (
+    OllamaError, build_system_prompt, player_name_for, stream_chat, turn_reminder,
+)
 from backend.rpg_engine import (
     auto_relationship_delta, calculate_xp_reward, cast_delta, cast_targets, detect_risk_action,
     get_roll_modifier, roll_d20,
@@ -42,6 +44,8 @@ from backend.session_manager import (
 from backend.settings_manager import get_settings
 
 router = APIRouter(prefix="/api", tags=["chat"])
+
+GROUP_MAX_TEMPERATURE = 0.7
 
 
 def _sse(event: dict) -> str:
@@ -152,19 +156,31 @@ async def _reply(session_id: str, character_id: str, user_text: Optional[str],
         world = load_world(character.world_id) if character.world_id else None
         # Fatos do livro do mundo que a conversa acabou de citar (últimas mensagens).
         lore = select_lore(world, [m.content for m in session.history[-4:]])
+        profile = load_profile()
         system_prompt = build_system_prompt(
             character, world, rpg,
             memory_summary=session.summary if settings["memory_enabled"] else "",
             response_length=settings["response_length"],
             lore_entries=lore,
-            profile=load_profile(),
+            profile=profile,
         )
+        window = prompt_window(session, system_prompt)
+        last_user = next((m.content for m in reversed(session.history) if m.role == MessageRole.USER), "")
+        reminder = turn_reminder(character, player_name_for(rpg, profile), last_user)
+        # Vai junto da última fala do jogador (só no envio, o histórico salvo não muda): nem todo
+        # modelo do Ollama aceita mensagem de sistema no meio da conversa.
+        if window and window[-1].role == MessageRole.USER:
+            window = window[:-1] + [Message(role=MessageRole.USER, content=f"{window[-1].content}\n\n{reminder}")]
+        else:
+            window = window + [Message(role=MessageRole.SYSTEM, content=reminder)]
+        # Cena com elenco grande: menos criatividade, mais coerência (o modelo inventa menos).
+        temperature = min(settings["temperature"], GROUP_MAX_TEMPERATURE) if character.group else None
 
         full = ""
         completed = False
         try:
             # aclosing: ao sair no meio (loop), fecha a conexão e o Ollama para de gerar na hora.
-            async with aclosing(stream_chat(prompt_window(session, system_prompt), system_prompt)) as tokens:
+            async with aclosing(stream_chat(window, system_prompt, temperature)) as tokens:
                 async for token in tokens:
                     full += token
                     yield _sse({"type": "token", "t": token})

@@ -21,7 +21,8 @@ _SYSTEM = (
     'uma lista com 3 textos curtos, por exemplo ["...", "...", "..."]. '
     "Cada texto é algo que o JOGADOR faz ou diz agora, escrito em primeira pessoa, em português do Brasil, "
     "com no máximo 12 palavras. As três precisam levar a história para caminhos diferentes: uma cuidadosa ou "
-    "curiosa, uma ousada, e uma inesperada. Use o que acabou de acontecer na cena. Não escreva pelo outro "
+    "curiosa, uma ousada, e uma inesperada. Use o que acabou de acontecer na cena e cite pelo nome as pessoas, "
+    "lugares e objetos que aparecem nela; nada vago como \"quero ver aquele lugar\". Não escreva pelo outro "
     "personagem, não numere e não explique."
 )
 

@@ -99,8 +99,9 @@ def build_system_prompt(
                  "cada uma com voz própria. Esteja COMPLETAMENTE nos papéis o tempo todo.")
         who_title, how_title = "O elenco e a cena:", "Como cada uma age e fala:"
         identity = (f"- Você interpreta o elenco de {character.name}. Nunca quebre o personagem e nunca mencione que é uma IA.\n"
-                    "- Quando alguém fala, comece o trecho com **Nome:** para deixar claro quem é. Escolha 1 a 3 personagens por cena, "
-                    "conforme o lugar e o clima, e deixe as outras aparecerem quando fizer sentido.\n"
+                    "- Quando alguém fala, comece o trecho com **Nome:** para deixar claro quem é. No máximo 2 personagens falam "
+                    "em cada resposta, escolhidas conforme o lugar, o clima e quem o jogador procurou; as outras ficam em silêncio "
+                    "ou aparecem só num gesto curto.\n"
                     f"- Interprete apenas o elenco e o mundo. NUNCA escreva falas, pensamentos ou ações de {player_name}: termine sempre deixando espaço para ele reagir.")
     else:
         intro = f"Você é {character.name}. Esteja COMPLETAMENTE no personagem o tempo todo."
@@ -242,10 +243,40 @@ def _options(settings: Dict, num_predict: Optional[int] = None) -> dict:
     }
 
 
-async def stream_chat(messages: List[Message], system_prompt: str) -> AsyncIterator[str]:
+def player_name_for(rpg_state, profile) -> str:
+    if rpg_state and rpg_state.player and rpg_state.player.name:
+        return rpg_state.player.name
+    if profile and profile.name:
+        return profile.name
+    return "o jogador"
+
+
+def turn_reminder(character, player_name: str, last_user: str) -> str:
+    """Lembrete curto que vai DEPOIS do histórico. Modelos pequenos (7B/8B) esquecem as regras do
+    começo do prompt quando a conversa cresce; colado na mensagem do jogador, o lembrete pesa mais."""
+    group = getattr(character, "group", False)
+    lines = ["[Lembrete para esta resposta, não mostre isto ao jogador]"]
+    if last_user.strip():
+        lines.append(f"- Antes de qualquer coisa, responda de forma direta ao que {player_name} acabou de fazer ou "
+                     f"perguntar: \"{last_user.strip()[:300]}\". Se foi uma pergunta, alguém responde de verdade.")
+    if group:
+        lines.append("- No máximo 2 personagens falam. As outras ficam quietas ou só aparecem num gesto curto. "
+                     "Não traga gente nova para a cena sem motivo.")
+    lines.append(f"- Fale com {player_name} sempre por \"você\", nunca por \"ele\" ou \"dele\".")
+    lines.append("- Use só nomes, lugares e regras que já apareceram na ficha, no mundo ou na conversa. "
+                 "Se precisar de algo novo, apresente com clareza em vez de citar como se o jogador já soubesse.")
+    lines.append(f"- Não escreva falas, pensamentos nem decisões de {player_name}.")
+    return "\n".join(lines)
+
+
+async def stream_chat(messages: List[Message], system_prompt: str,
+                      temperature: Optional[float] = None) -> AsyncIterator[str]:
     """Faz streaming da resposta token por token, já sem blocos de raciocínio."""
     settings = get_settings()
     model = await resolve_model()
+    options = _options(settings)
+    if temperature is not None:
+        options["temperature"] = temperature
     payload = {
         "model": model,
         "messages": [{"role": "system", "content": system_prompt}] + [
@@ -253,7 +284,7 @@ async def stream_chat(messages: List[Message], system_prompt: str) -> AsyncItera
         ],
         "stream": True,
         "keep_alive": settings["keep_alive"],
-        "options": _options(settings),
+        "options": options,
     }
     think = ThinkFilter()
     try:
