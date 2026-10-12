@@ -15,10 +15,12 @@ from backend.character_manager import load_character, save_character
 from backend.models import CastMember, Character
 from backend.ollama_client import complete
 from backend.safety import MIN_AGE, validate_texts
+from backend.settings_manager import get_settings
 from backend.storage import slugify
 
 MAX_CAST = 4
 ATTEMPTS = 2
+ADVENTURE_TOKENS = 2200   # o JSON inteiro (abertura + elenco) precisa caber, senão chega cortado
 
 GENRES = ["Fantasia", "Isekai", "Cyberpunk", "Terror", "Romance", "Mistério", "Faroeste", "Pós-apocalipse",
           "Ficção científica", "Comédia"]
@@ -96,7 +98,8 @@ def build_character(data: dict, idea: str, genre: str = "") -> Character:
         raise ValueError("A história veio incompleta.")
 
     cast_lines, cast = [], []
-    for item in (data.get("cast") or [])[:MAX_CAST]:
+    cast_raw = data.get("cast")
+    for item in (cast_raw if isinstance(cast_raw, list) else [])[:MAX_CAST]:
         if not isinstance(item, dict):
             continue
         name = _text(item.get("name"), 40)
@@ -113,11 +116,12 @@ def build_character(data: dict, idea: str, genre: str = "") -> Character:
     role = _text(data.get("player_role"), 400)
     description = setting
     if role:
-        description += f"\n\nVocê: {role}"
+        description += f"\n\nPapel do jogador: {role}"
     if cast_lines:
         description += "\n\nQuem está na história:\n" + "\n".join(cast_lines)
 
-    tags = [_text(t, 24).lower() for t in (data.get("tags") or []) if _text(t, 24)][:5]
+    tags_raw = data.get("tags")
+    tags = [_text(t, 24).lower() for t in (tags_raw if isinstance(tags_raw, list) else []) if _text(t, 24)][:5]
     if genre and genre.lower() not in tags:
         tags.insert(0, genre.lower())
     if "aventura" not in tags:
@@ -160,8 +164,9 @@ async def create_adventure(idea: str, genre: str = "") -> Character:
     if genre:
         prompt += f"\nGênero: {genre}"
     last_error = "A IA não conseguiu montar a história."
+    num_predict = min(ADVENTURE_TOKENS, get_settings()["num_ctx"] - 800)
     for _ in range(ATTEMPTS):
-        raw = await complete(prompt, system=_SYSTEM, num_predict=1400, temperature=0.9, json_mode=True)
+        raw = await complete(prompt, system=_SYSTEM, num_predict=num_predict, temperature=0.9, json_mode=True)
         data = _first_json_object(raw)
         if not data:
             last_error = "A IA respondeu num formato que não deu para ler."
@@ -170,6 +175,9 @@ async def create_adventure(idea: str, genre: str = "") -> Character:
             character = build_character(data, idea, genre)
         except ValueError as e:
             last_error = str(e)
+            continue
+        except (TypeError, AttributeError):   # campo com tipo errado (lista virou texto etc.)
+            last_error = "A IA respondeu num formato que não deu para ler."
             continue
         character.id = _free_id(character.name)
         return save_character(character)

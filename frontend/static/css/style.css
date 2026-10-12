@@ -505,6 +505,8 @@ textarea#user-input::placeholder{color:var(--text3);}
 #stop-btn{background:var(--red);border:none;color:#fff;border-radius:var(--rs);width:44px;cursor:pointer;font-size:1rem;}
 .btn-secondary-sm.active{border-color:var(--accent);color:var(--accentb);}
 .btn-secondary-sm:disabled{opacity:0.5;cursor:not-allowed;}
+.sd-off{opacity:0.5;}
+.char-card:focus-visible,.session-card:focus-visible,.mode-card:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
 .modal-wide{width:min(720px,95vw);}
 .modal-title{font-size:1.15rem;margin-bottom:10px;}
 .modal-help{font-size:0.82rem;color:var(--text2);margin-bottom:12px;line-height:1.5;}

@@ -82,7 +82,7 @@ async def extract_changes(user_text: str, reply: str) -> Dict:
     """Pergunta ao modelo o que mudou no inventário nesta troca. Falhas viram 'nada mudou'."""
     prompt = f"Jogador disse: {user_text[:600]}\n\nResposta da cena: {reply[:1800]}\n\nJSON:"
     try:
-        raw = await complete(prompt, system=_SYSTEM, num_predict=160, temperature=0.1)
+        raw = await complete(prompt, system=_SYSTEM, num_predict=160, temperature=0.1, json_mode=True)
     except OllamaError:
         return {"gain": [], "lose": [], "gold": 0}
     return parse_changes(raw)

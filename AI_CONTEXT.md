@@ -44,9 +44,9 @@ python backend/main.py
 
 Ou usar o `🎮 Iniciar RPG-IA.bat` na pasta raiz.
 
-**Pré-requisito:** Ollama rodando com deepseek-r1:7b instalado.
+**Pré-requisito:** Ollama rodando com um modelo de chat/instruct, escolhido em ⚙️ Configurações (ver README).
 ```powershell
-ollama run deepseek-r1:7b
+ollama pull llama3.1:8b
 ```
 
 ---
@@ -183,8 +183,8 @@ Estilo dos textos: nomes que soam como lugar e pessoa, não como tradução lite
 2. **Streaming via SSE** com um objeto JSON por evento (nada de sentinelas no texto).
 3. **GPU de 6 GB (GTX 1660)**: LLM e Stable Diffusion não cabem juntos, então se alternam.
    Padrão `num_ctx=4096` para um 7B em Q4. Dica: `OLLAMA_FLASH_ATTENTION=1` e `OLLAMA_KV_CACHE_TYPE=q8_0`.
-4. **Ollama local**: o modelo é escolhido nas Configurações. Para roleplay, 7B a 12B de RP/chat rendem
-   mais que o `deepseek-r1:7b` (modelo de raciocínio, gasta tokens "pensando").
+4. **Ollama local**: o modelo é escolhido nas Configurações. Para roleplay: `llama3.1:8b`, `dolphin3` ou
+   `huihui_ai/qwen3-abliterated:4b-instruct-2507-q4_K_M`. Modelos de raciocínio recebem `think: false`.
 5. **Servidor só em 127.0.0.1 e sem CORS aberto**. O celular entra pelo `tailscale serve` (https, só aparelhos
    da conta do usuário). Nunca trocar para 0.0.0.0 nem usar `tailscale funnel`: o app não tem login.
 

@@ -4,10 +4,9 @@ import { api } from './api.js';
 import { state } from './state.js';
 import { $, avatarHtml, characterHue, closeModal, escapeHtml, openModal, showScreen, toast } from './util.js';
 import { renderChat } from './messages.js';
-import { loadChoices } from './chat.js';
+import { focusInput, leaveChat, loadChoices } from './chat.js';
 import { ATTR_LABELS, setupDiceTable, setupSidebar } from './sidebar.js';
 import { loadPortrait } from './portrait.js';
-import { stopSpeaking } from './tts.js';
 
 let selectedRace = null;
 let selectedClass = null;
@@ -49,7 +48,7 @@ export async function loadCharacters() {
     }
     // Capa no estilo galeria: retrato quando existe, senão o emoji grande sobre a cor do personagem.
     grid.innerHTML = chars.map((c) => `
-      <div class="char-card${c.has_portrait ? ' has-portrait' : ''}" data-action="open-mode" data-id="${escapeHtml(c.id)}"
+      <div class="char-card${c.has_portrait ? ' has-portrait' : ''}" role="button" tabindex="0" data-action="open-mode" data-id="${escapeHtml(c.id)}"
            data-tags="${escapeHtml((c.tags || []).join('|'))}" style="--hue:${characterHue(c.id)}">
         <button class="char-card-edit" data-action="edit-character" data-id="${escapeHtml(c.id)}" title="Editar">✏️</button>
         <div class="char-card-cover">
@@ -100,7 +99,7 @@ export async function loadSavedSessions() {
     $('saved-sessions-list').innerHTML = sessions.map((s) => {
       const player = s.player_name ? ` · ${escapeHtml(s.player_name)} Nv${Number(s.player_level)}` : '';
       const c = (state.characterList || []).find((x) => x.id === s.character_id) || {};
-      return `<div class="session-card" data-action="continue-session" data-id="${escapeHtml(s.session_id)}"
+      return `<div class="session-card" role="button" tabindex="0" data-action="continue-session" data-id="${escapeHtml(s.session_id)}"
                    style="--hue:${characterHue(s.character_id)}">
         <span class="session-card-avatar">${c.id ? avatarHtml(c) : escapeHtml(s.character_emoji)}</span>
         <div class="session-card-info">
@@ -114,7 +113,8 @@ export async function loadSavedSessions() {
 }
 
 export function backToSelect() {
-  stopSpeaking();
+  leaveChat();
+  state.session = null;   // o que ainda chegar da conversa (resposta, imagem) é descartado
   showScreen('screen-select');
   loadCharacters();
   loadSavedSessions();
@@ -343,6 +343,7 @@ export async function deleteSession(sessionId) {
 }
 
 function openChatScreen(player) {
+  leaveChat();   // "Nova conversa" chega aqui direto da tela do chat
   const c = state.character;
   showScreen('screen-chat');
   $('portrait-emoji').textContent = c.avatar_emoji || '👤';
@@ -361,5 +362,5 @@ function openChatScreen(player) {
   setupSidebar(state.mode, player, state.cast);
   renderChat();
   loadChoices();
-  $('user-input').focus();
+  focusInput();
 }

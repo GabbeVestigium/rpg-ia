@@ -16,13 +16,13 @@ from backend.storage import read_json, write_json_atomic
 # tipo, mínimo, máximo (None = livre) ou lista de opções
 _SCHEMA: Dict[str, dict] = {
     # Modelo de texto
-    "model":               {"default": "",    "type": str},     # vazio = auto (primeiro instalado)
-    "temperature":         {"default": 0.85,  "type": float, "min": 0.0, "max": 2.0},
+    "model":               {"default": "",    "type": str},     # vazio = auto (lista de preferência em ollama_client)
+    "temperature":         {"default": 0.8,   "type": float, "min": 0.0, "max": 2.0},
     "top_p":               {"default": 0.92,  "type": float, "min": 0.0, "max": 1.0},
     "min_p":               {"default": 0.05,  "type": float, "min": 0.0, "max": 1.0},
     "repeat_penalty":      {"default": 1.1,   "type": float, "min": 1.0, "max": 2.0},
     "num_ctx":             {"default": 4096,  "type": int,   "min": 1024, "max": 32768},
-    "num_predict":         {"default": 700,   "type": int,   "min": 64,   "max": 4096},
+    "num_predict":         {"default": 900,   "type": int,   "min": 64,   "max": 4096},   # teto; o tamanho da resposta decide (ollama_client.reply_tokens)
     "keep_alive":          {"default": "30m", "type": str},
     # Estilo da resposta
     "response_length":     {"default": "medium", "type": str, "options": ["short", "medium", "long"]},

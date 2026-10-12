@@ -14,6 +14,7 @@ Depois do "done", com o chat já liberado, ainda podem chegar:
 """
 
 import json
+import re
 from contextlib import aclosing
 from typing import AsyncIterator, Optional
 
@@ -23,14 +24,15 @@ from fastapi.responses import StreamingResponse
 from backend.character_manager import load_character, load_world
 from backend.choices import current_choices, remember_choices, suggest_choices
 from backend.inventory_ai import apply_changes, describe, extract_changes, looks_like_item_change, revert_changes
-from backend.loop_guard import find_loop
+from backend.loop_guard import drop_reused_last, guard, reuse_pool, trim_unfinished
 from backend.lorebook import select_lore
 from backend.mood import detect_mood
-from backend.memory import history_budget, prompt_window, update_summary, window_start
+from backend.memory import apply_summary, draft_summary, est_tokens, history_budget, prompt_window, summary_point
 from backend.models import ChatRequest, EditMessageRequest, Message, MessageRole, RegenerateRequest, SwipeRequest
 from backend.profile_manager import load_profile
 from backend.ollama_client import (
-    OllamaError, build_system_prompt, player_name_for, stream_chat, turn_reminder,
+    NOTE_MARKERS, RESTART, OllamaError, build_system_prompt, chat_stops, player_name_for, stream_chat,
+    turn_reminder,
 )
 from backend.rpg_engine import (
     auto_relationship_delta, calculate_xp_reward, cast_delta, cast_targets, detect_risk_action,
@@ -88,6 +90,48 @@ def _auto_roll(rpg, text: str) -> Optional[dict]:
     return {"result": result, "event": event}
 
 
+ROLL_TAG = "\n\n[ROLAGEM AUTOMÁTICA:"
+
+
+def _revert_roll(session, user_text: str) -> str:
+    """Desfazer: tira a rolagem automática do texto devolvido ao jogador e o XP que ela deu
+    (se não subiu de nível; aí o XP fica, para não bagunçar o nível)."""
+    text, sep, tag = user_text.partition(ROLL_TAG)
+    if not sep:
+        return user_text
+    rpg = get_rpg_state(session)
+    m = re.match(r" (.+?): d20=(\d+) \+ (-?\d+) = (-?\d+) \| (.+)\]", tag)
+    if m and rpg.player:
+        prefix = f"Rolagem {m[1]}: {m[2]}+{m[3]}={m[4]} [{m[5]}]"
+        log = next((l for l in reversed(rpg.event_log) if l.startswith(prefix)), "")
+        xp = re.search(r"\+(\d+)XP", log)
+        if xp and "LEVEL UP" not in log:
+            rpg.player.xp = max(0, rpg.player.xp - int(xp[1]))
+            rpg.event_log.append(f"Rolagem desfeita: -{xp[1]}XP")
+            session.rpg_state = rpg
+            save_session(session)
+    return text
+
+
+def _still_current(session_id: str, text: str):
+    """A sessão, se a última mensagem ainda é esta resposta (ninguém mandou, desfez ou editou nada)."""
+    session = load_session(session_id)
+    if session and session.history and session.history[-1].role == MessageRole.ASSISTANT \
+            and session.history[-1].content == text:
+        return session
+    return None
+
+
+def _clean_saved(m: Message) -> Message:
+    """Conversas antigas podem ter o lembrete copiado dentro da resposta: ele não volta ao modelo."""
+    if m.role != MessageRole.ASSISTANT:
+        return m
+    content = m.content
+    for marker in NOTE_MARKERS:
+        content = content.split(marker, 1)[0]
+    return Message(role=m.role, content=content.rstrip()) if content != m.content else m
+
+
 def _revert_inventory(session) -> None:
     """Desfaz no inventário o que a última resposta tinha dado ou tirado (se for o caso)."""
     rpg = get_rpg_state(session)
@@ -111,7 +155,8 @@ async def _reply(session_id: str, character_id: str, user_text: Optional[str],
     """
     Gera a resposta do personagem. Com user_text, grava antes a mensagem do jogador
     (e aplica rolagem/relacionamento); sem ele, só responde ao histórico atual
-    (regenerar). Tudo roda sob o lock da sessão.
+    (regenerar). A geração roda sob o lock da sessão; os extras depois do "done" (escolhas,
+    inventário, resumo) rodam com o lock livre e só gravam se a resposta ainda for a última.
     """
     async with session_lock(session_id):
         session = load_session(session_id)
@@ -157,16 +202,27 @@ async def _reply(session_id: str, character_id: str, user_text: Optional[str],
         # Fatos do livro do mundo que a conversa acabou de citar (últimas mensagens).
         lore = select_lore(world, [m.content for m in session.history[-4:]])
         profile = load_profile()
-        system_prompt = build_system_prompt(
-            character, world, rpg,
-            memory_summary=session.summary if settings["memory_enabled"] else "",
-            response_length=settings["response_length"],
-            lore_entries=lore,
-            profile=profile,
-        )
-        window = prompt_window(session, system_prompt)
+        player = player_name_for(rpg, profile)
         last_user = next((m.content for m in reversed(session.history) if m.role == MessageRole.USER), "")
-        reminder = turn_reminder(character, player_name_for(rpg, profile), last_user)
+        reminder = turn_reminder(character, player, last_user)
+
+        def prompt_for(char) -> str:
+            return build_system_prompt(
+                char, world, rpg,
+                memory_summary=session.summary if settings["memory_enabled"] else "",
+                response_length=settings["response_length"],
+                lore_entries=lore,
+                profile=profile,
+            )
+
+        system_prompt = prompt_for(character)
+        budget = history_budget(system_prompt, settings) - est_tokens(reminder)
+        if budget < settings["num_ctx"] // 4 and character.example_dialogue:
+            # Ficha grande demais para o contexto: as falas de exemplo saem para o histórico caber
+            # (sem histórico o modelo repete a própria resposta anterior).
+            system_prompt = prompt_for(character.model_copy(update={"example_dialogue": ""}))
+            budget = history_budget(system_prompt, settings) - est_tokens(reminder)
+        window = [_clean_saved(m) for m in prompt_window(session, budget)]
         # Vai junto da última fala do jogador (só no envio, o histórico salvo não muda): nem todo
         # modelo do Ollama aceita mensagem de sistema no meio da conversa.
         if window and window[-1].role == MessageRole.USER:
@@ -175,21 +231,38 @@ async def _reply(session_id: str, character_id: str, user_text: Optional[str],
             window = window + [Message(role=MessageRole.SYSTEM, content=reminder)]
         # Cena com elenco grande: menos criatividade, mais coerência (o modelo inventa menos).
         temperature = min(settings["temperature"], GROUP_MAX_TEMPERATURE) if character.group else None
+        # Trechos que o modelo não deve reciclar: as duas últimas respostas e as falas de exemplo.
+        recent = [m.content for m in session.history if m.role == MessageRole.ASSISTANT][-2:]
+        pool = reuse_pool(recent + [character.example_dialogue or ""])
 
         full = ""
         completed = False
+        info: dict = {}
         try:
             # aclosing: ao sair no meio (loop), fecha a conexão e o Ollama para de gerar na hora.
-            async with aclosing(stream_chat(window, system_prompt, temperature)) as tokens:
+            async with aclosing(stream_chat(window, system_prompt, temperature,
+                                            stop=chat_stops(player), info=info)) as tokens:
                 async for token in tokens:
-                    full += token
-                    yield _sse({"type": "token", "t": token})
-                    cut = find_loop(full)
-                    if cut is not None:
-                        # Entrou em loop: para de gerar e manda o texto sem a repetição.
-                        full = full[:cut].rstrip()
+                    if token == RESTART:
+                        # O que saiu até aqui era raciocínio do modelo, não resposta.
+                        full = ""
                         yield _sse({"type": "replace", "text": full})
+                        continue
+                    clean, stop = guard(full + token, pool, player)
+                    if clean == full + token:
+                        yield _sse({"type": "token", "t": token})
+                    else:
+                        # Loop, trecho reciclado, turno do jogador ou lembrete copiado: manda o texto limpo.
+                        yield _sse({"type": "replace", "text": clean})
+                    full = clean
+                    if stop:
                         break
+            final = drop_reused_last(full, pool)
+            if info.get("done_reason") == "length":
+                final = trim_unfinished(final)   # cortada pelo limite de tokens: termina na última frase
+            if final != full:
+                full = final
+                yield _sse({"type": "replace", "text": full})
             completed = True
         except OllamaError as e:
             yield _sse({"type": "error", "message": str(e)})
@@ -212,42 +285,63 @@ async def _reply(session_id: str, character_id: str, user_text: Optional[str],
                     session.history.pop()
                     save_session(session)
 
-        if completed and text:
-            if not character.group:
-                yield _sse({"type": "mood", "mood": detect_mood(text)})   # troca a expressão do retrato
+        if not (completed and text):
+            if completed:
+                yield _sse({"type": "error", "message": "O modelo não respondeu nada. Tente regenerar ou "
+                                                        "escolha outro modelo nas Configurações."})
             yield _sse({"type": "done"})
-            # O que vem depois do "done" roda com o chat já liberado para o jogador.
-            last_user = next((m.content for m in reversed(session.history[:-1])
-                              if m.role == MessageRole.USER), "")
-            if settings["auto_choices"]:
-                try:
-                    choices = await suggest_choices(character.name, last_user, text)
-                    if choices:
-                        remember_choices(session, choices)
-                        save_session(session)
-                        yield _sse({"type": "choices", "options": choices})
-                except Exception:
-                    pass  # as escolhas são um extra; nunca devem quebrar o chat
-            if (settings["auto_inventory"] and rpg.mode != GameMode.NARRATIVE and rpg.player
-                    and (user_text is not None or regen)):
-                try:
-                    if looks_like_item_change(text, last_user):
-                        done = apply_changes(rpg.player.inventory, await extract_changes(last_user, text))
+            return
+        base = session.model_copy(deep=True)   # a sessão como ficou ao terminar a resposta
+
+    # Daqui em diante o lock está livre: o jogador já pode mandar outra mensagem.
+    if not character.group:
+        yield _sse({"type": "mood", "mood": detect_mood(text)})   # troca a expressão do retrato
+    yield _sse({"type": "done"})
+    last_user = next((m.content for m in reversed(base.history[:-1]) if m.role == MessageRole.USER), "")
+    if settings["auto_choices"]:
+        try:
+            choices = await suggest_choices(character.name, last_user, text)
+            current = None
+            if choices:
+                async with session_lock(session_id):
+                    current = _still_current(session_id, text)
+                    if current:
+                        remember_choices(current, choices)
+                        save_session(current)
+            if current:
+                yield _sse({"type": "choices", "options": choices})
+        except Exception:
+            pass  # as escolhas são um extra; nunca devem quebrar o chat
+    if (settings["auto_inventory"] and rpg.mode != GameMode.NARRATIVE and rpg.player
+            and (user_text is not None or regen)):
+        try:
+            if looks_like_item_change(text, last_user):
+                changes = await extract_changes(last_user, text)
+                done = None
+                async with session_lock(session_id):
+                    current = _still_current(session_id, text)
+                    cur_rpg = get_rpg_state(current) if current else None
+                    if cur_rpg and cur_rpg.player:
+                        done = apply_changes(cur_rpg.player.inventory, changes)
                         if done:
-                            rpg.last_inventory = done
-                            rpg.event_log.append("Inventário: " + ", ".join(describe(done)))
-                            session.rpg_state = rpg
-                            save_session(session)
-                            yield _sse({"type": "inventory", "changes": describe(done)})
-                except Exception:
-                    pass  # o inventário automático é um extra; nunca deve quebrar o chat
-            try:
-                keep_from = window_start(session, history_budget(system_prompt))
-                await update_summary(session, character.name, keep_from)
-            except Exception:
-                pass  # memória é um extra; nunca deve quebrar o chat
-        else:
-            yield _sse({"type": "done"})
+                            cur_rpg.last_inventory = done
+                            cur_rpg.event_log.append("Inventário: " + ", ".join(describe(done)))
+                            current.rpg_state = cur_rpg
+                            save_session(current)
+                if done:
+                    yield _sse({"type": "inventory", "changes": describe(done)})
+        except Exception:
+            pass  # o inventário automático é um extra; nunca deve quebrar o chat
+    try:
+        if not session_lock(session_id).locked():   # já chegou outra mensagem: ela tem prioridade
+            draft = await draft_summary(base, character.name, summary_point(base, budget))
+            if draft:
+                async with session_lock(session_id):
+                    current = load_session(session_id)
+                    if current:
+                        apply_summary(current, base, draft)
+    except Exception:
+        pass  # memória é um extra; nunca deve quebrar o chat
 
 
 @router.post("/chat")
@@ -320,6 +414,8 @@ async def undo(req: RegenerateRequest):
         if session:
             _revert_inventory(session)
         user_text = pop_last_exchange(session) if session else None
+        if user_text:
+            user_text = _revert_roll(session, user_text)
     if user_text is None:
         raise HTTPException(400, "Nada para desfazer")
     return {"user_text": user_text}

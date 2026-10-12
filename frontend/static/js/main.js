@@ -106,6 +106,13 @@ $('backup-file').addEventListener('change', (e) => {
   e.target.value = '';
 });
 
+// Cartões clicáveis (<div data-action>) respondem a Enter e Espaço como botões.
+document.addEventListener('keydown', (e) => {
+  if ((e.key !== 'Enter' && e.key !== ' ') || !e.target.matches('[data-action]:not(button)')) return;
+  e.preventDefault();   // Espaço rolaria a página
+  e.target.click();
+});
+
 // Fecha modais com Esc.
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;

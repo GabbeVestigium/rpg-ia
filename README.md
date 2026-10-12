@@ -15,8 +15,9 @@ Roda 100% no seu PC: texto no Ollama, imagens no Stable Diffusion, voz no navega
 powershell -ExecutionPolicy Bypass -File start.ps1
 ```
 
-O script cria o ambiente virtual, instala as dependências, inicia o Ollama se preciso, sobe o servidor em
-http://127.0.0.1:8000 e abre o navegador. Ou use o `🎮 Iniciar RPG-IA.bat`.
+O script cria o ambiente virtual, instala as dependências (só quando o `requirements.txt` muda), inicia o Ollama
+se preciso, sobe o servidor em http://127.0.0.1:8000 e abre o navegador quando ele responde.
+Ou use o `🎮 Iniciar RPG-IA.bat`: se algo der errado, a janela fica aberta mostrando o erro.
 
 ## O que tem
 
@@ -63,17 +64,18 @@ Nunca use `tailscale funnel` aqui: ele publicaria o RPG para a internet inteira.
 
 ## Modelo de texto (GTX 1660, 6 GB)
 
-O `deepseek-r1:7b` é um modelo de raciocínio: gasta tokens "pensando" e costuma sair do personagem.
-Para roleplay, um modelo de chat/RP de 7B a 12B rende mais. Instale e escolha em ⚙️ Configurações:
+Para roleplay, use um modelo de chat/instruct. Instale e escolha em ⚙️ Configurações:
 
 ```powershell
-ollama pull dolphin-mistral:7b      # exemplo de 7B sem censura que cabe inteiro na GPU
-ollama pull hf.co/<usuario>/<repo>:Q4_K_M   # qualquer GGUF do Hugging Face
+ollama pull llama3.1:8b                                            # o mais coerente e fiel ao personagem
+ollama pull huihui_ai/qwen3-abliterated:4b-instruct-2507-q4_K_M    # o mais rápido, cabe inteiro na GPU
+ollama pull dolphin3                                               # alternativa sem censura
 ```
 
-Os nomes mudam rápido; procure por modelos de roleplay em Q4_K_M. Na prática:
-- **7B em Q4** cabe inteiro na VRAM com contexto 4096 (padrão).
-- **8B a 12B** ficam no limite de 6 GB: se ficar lento, reduza o contexto ou use Q4 menor.
+Na prática:
+- **4B em Q4** cabe inteiro na VRAM e responde rápido; **8B** fica no limite de 6 GB (parte roda na CPU).
+- Modelos de raciocínio (`deepseek-r1`, `qwen3:4b`) não são necessários: o app pede `think: false` e filtra
+  blocos `<think>`, mas eles rendem menos no roleplay.
 - Para economizar VRAM, inicie o Ollama com `OLLAMA_FLASH_ATTENTION=1` e `OLLAMA_KV_CACHE_TYPE=q8_0`
   (o `start.ps1` já faz isso quando é ele quem inicia o Ollama).
 - O Ollama e o Stable Diffusion não cabem juntos na VRAM. Ao gerar imagem, o modelo de texto é

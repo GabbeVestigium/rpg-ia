@@ -5,6 +5,7 @@ import os
 import posixpath
 import tempfile
 import zipfile
+import zlib
 from datetime import datetime
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
@@ -63,6 +64,8 @@ _DIRS = {"characters": CHARACTERS_DIR, "worlds": WORLDS_DIR, "sessions": SESSION
 _FILES = {"settings.json": SETTINGS_FILE, "profile.json": PROFILE_FILE}
 MAX_FILE_BYTES = 25 * 1024 * 1024
 MAX_ENTRIES = 20000
+MAX_UPLOAD_BYTES = 2 * 1024 ** 3   # zip enviado
+MAX_TOTAL_BYTES = 4 * 1024 ** 3    # soma descompactada (contra zip bomb)
 
 
 def _remove(path: str) -> None:
@@ -150,6 +153,10 @@ async def restore_backup(file: UploadFile = File(...), overwrite: bool = Form(Fa
     Restaura um backup sem apagar nada. O que já existe é mantido, a menos que overwrite=true.
     Personagens de menores de idade e arquivos fora do esperado são recusados e listados.
     """
+    file.file.seek(0, os.SEEK_END)
+    if file.file.tell() > MAX_UPLOAD_BYTES:
+        raise HTTPException(400, "Backup grande demais")
+    file.file.seek(0)
     try:
         z = zipfile.ZipFile(file.file)  # lê direto do arquivo temporário, sem carregar tudo na memória
     except zipfile.BadZipFile:
@@ -157,13 +164,17 @@ async def restore_backup(file: UploadFile = File(...), overwrite: bool = Form(Fa
 
     restored, skipped, rejected = 0, 0, []
     infos = [i for i in z.infolist() if not i.is_dir()]
-    if len(infos) > MAX_ENTRIES:
+    if len(infos) > MAX_ENTRIES or sum(i.file_size for i in infos) > MAX_TOTAL_BYTES:
         raise HTTPException(400, "Backup grande demais")
     for info in infos:
         if info.file_size > MAX_FILE_BYTES:
             rejected.append({"file": info.filename, "reason": "arquivo grande demais"})
             continue
-        data = z.read(info)
+        try:
+            data = z.read(info)  # o zipfile para no file_size declarado, então o tamanho checado vale
+        except (zipfile.BadZipFile, zlib.error, EOFError, NotImplementedError):
+            rejected.append({"file": info.filename, "reason": "arquivo corrompido"})
+            continue
         dest, reason = _check_entry(info.filename, data)
         if reason:
             rejected.append({"file": info.filename, "reason": reason})

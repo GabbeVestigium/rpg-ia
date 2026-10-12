@@ -17,7 +17,12 @@ function setStreaming(on) {
   $('stop-btn').style.display = on ? '' : 'none';
   $('user-input').disabled = on;
   document.querySelectorAll('.msg-actions button').forEach((b) => { b.disabled = on; });
-  if (!on) $('user-input').focus();
+  if (!on) focusInput();
+}
+
+/** Foca a caixa de texto só com mouse: no celular isso abriria o teclado sozinho. */
+export function focusInput() {
+  if (matchMedia('(hover: hover)').matches) $('user-input').focus();
 }
 
 /** Compara com o servidor e redesenha se divergiu (resposta parcial, erro, desconexão). */
@@ -55,6 +60,7 @@ async function runReply(path, body) {
   showTypingIndicator();
   const controller = new AbortController();
   state.abort = controller;
+  const session = state.session;
 
   let bubble = null;
   let full = '';
@@ -64,6 +70,8 @@ async function runReply(path, body) {
   // A conexão fica aberta um pouco depois do "done" (resumo da memória, inventário), então o chat
   // é liberado no "done" e o resto chega em segundo plano.
   streamSSE(path, body, async (evt) => {
+    // Trocou de conversa: o resto deste stream (escolhas, inventário...) não é desta tela.
+    if (state.session !== session) { finish(); return; }
     if (evt.type === 'roll') {
       removeTypingIndicator();
       await new Promise((resolve) => window.showDiceRoll(evt.result, resolve));
@@ -76,8 +84,11 @@ async function runReply(path, body) {
         bubble.classList.add('typing-cursor');
       }
       full += evt.t;
+      // Só acompanha o fim se o jogador não subiu para reler (mede antes do texto crescer).
+      const box = $('messages');
+      const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < box.clientHeight;
       bubble.innerHTML = formatText(full);
-      scrollToBottom();
+      if (atBottom) scrollToBottom();
     } else if (evt.type === 'replace') {
       // A resposta entrou em loop: o servidor cortou a repetição e manda o texto certo.
       full = evt.text;
@@ -97,14 +108,14 @@ async function runReply(path, body) {
     }
   }, controller.signal)
     .catch((e) => { if (e.name !== 'AbortError') toast(e.message, 'error', 8000); })
-    .finally(() => { finish(); dropChoicesLoading(); });
+    .finally(() => { finish(); if (state.session === session) dropChoicesLoading(); });
 
   await finished;
   removeTypingIndicator();
   bubble?.classList.remove('typing-cursor');
   if (state.abort === controller) state.abort = null;
   setStreaming(false);
-  return full.trim();
+  return state.session === session ? full.trim() : null;
 }
 
 /** Escolhas da resposta que já está na tela (abrir a conversa: a primeira fala também ganha botões). */
@@ -171,8 +182,11 @@ export async function regenerate() {
 }
 
 async function finishExchange(reply, userText) {
+  if (reply === null) return;   // a conversa mudou no meio da resposta
+  const session = state.session;
   if (reply) state.history.push({ role: 'assistant', content: reply });
   await resync();
+  if (session !== state.session) return;   // saiu enquanto sincronizava: não fala na outra tela
   refreshActions();
   if (!reply && userText && !state.history.some((m) => m.role === 'user' && m.content.startsWith(userText))) {
     // Nada foi gerado e o servidor descartou a mensagem: devolve o texto à caixa.
@@ -196,6 +210,12 @@ export async function swipeVersion(delta) {
 }
 
 export function stopStreaming() { state.abort?.abort(); }
+
+/** Saindo da conversa: corta a resposta que ainda está chegando e a voz. */
+export function leaveChat() {
+  if (state.streaming) stopStreaming();
+  stopSpeaking();
+}
 
 export async function undoLast() {
   if (state.streaming) return;

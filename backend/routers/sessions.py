@@ -159,15 +159,16 @@ async def remove_session(session_id: str):
 @router.post("/player/create")
 async def create_player_endpoint(req: CreatePlayerRequest):
     """Modo médio: nome, raça e classe. Modo completo: também os atributos."""
-    session = _get_session(req.session_id)
-    rpg = get_rpg_state(session)
-    rpg.player = create_player(
-        name=req.name, race=req.race, char_class=req.char_class, mode=req.mode,
-        custom_attributes=req.attributes, age=req.age, appearance=req.appearance,
-    )
-    rpg.mode = req.mode
-    save_rpg_state(session, rpg)
-    return {"success": True, "player": rpg.player.model_dump(mode="json"), "mode": req.mode.value}
+    async with session_lock(req.session_id):
+        session = _get_session(req.session_id)
+        rpg = get_rpg_state(session)
+        rpg.player = create_player(
+            name=req.name, race=req.race, char_class=req.char_class, mode=req.mode,
+            custom_attributes=req.attributes, age=req.age, appearance=req.appearance,
+        )
+        rpg.mode = req.mode
+        save_rpg_state(session, rpg)
+        return {"success": True, "player": rpg.player.model_dump(mode="json"), "mode": req.mode.value}
 
 
 @router.get("/player/{session_id}")
@@ -184,18 +185,19 @@ async def get_player(session_id: str):
 
 @router.post("/quest/add")
 async def add_quest(req: AddQuestRequest):
-    session = _get_session(req.session_id)
-    rpg = get_rpg_state(session)
-    if not rpg.player:
-        raise HTTPException(400, "Personagem jogador não criado")
-    quest = Quest(
-        id=uuid.uuid4().hex[:8], title=req.title, description=req.description,
-        objectives=req.objectives, reward_xp=req.reward_xp, reward_gold=req.reward_gold,
-    )
-    rpg.player.quests.append(quest)
-    rpg.event_log.append(f"Nova quest recebida: {req.title}")
-    save_rpg_state(session, rpg)
-    return {"quest_id": quest.id, "quest": quest.model_dump(mode="json")}
+    async with session_lock(req.session_id):
+        session = _get_session(req.session_id)
+        rpg = get_rpg_state(session)
+        if not rpg.player:
+            raise HTTPException(400, "Personagem jogador não criado")
+        quest = Quest(
+            id=uuid.uuid4().hex[:8], title=req.title, description=req.description,
+            objectives=req.objectives, reward_xp=req.reward_xp, reward_gold=req.reward_gold,
+        )
+        rpg.player.quests.append(quest)
+        rpg.event_log.append(f"Nova quest recebida: {req.title}")
+        save_rpg_state(session, rpg)
+        return {"quest_id": quest.id, "quest": quest.model_dump(mode="json")}
 
 
 class CompleteQuestRequest(BaseModel):
@@ -205,22 +207,23 @@ class CompleteQuestRequest(BaseModel):
 
 @router.patch("/quest/complete")
 async def complete_quest(req: CompleteQuestRequest):
-    session = _get_session(req.session_id)
-    rpg = get_rpg_state(session)
-    if not rpg.player:
-        raise HTTPException(400, "Personagem não criado")
-    for quest in rpg.player.quests:
-        if quest.id == req.quest_id:
-            quest.status = QuestStatus.COMPLETED
-            leveled_up = rpg.player.add_xp(quest.reward_xp)
-            rpg.player.inventory.gold += quest.reward_gold
-            msg = f"Quest '{quest.title}' completada! +{quest.reward_xp} XP"
-            if leveled_up:
-                msg += f" | LEVEL UP! Nível {rpg.player.level}!"
-            rpg.event_log.append(msg)
-            save_rpg_state(session, rpg)
-            return {"success": True, "message": msg, "leveled_up": leveled_up}
-    raise HTTPException(404, "Quest não encontrada")
+    async with session_lock(req.session_id):
+        session = _get_session(req.session_id)
+        rpg = get_rpg_state(session)
+        if not rpg.player:
+            raise HTTPException(400, "Personagem não criado")
+        for quest in rpg.player.quests:
+            if quest.id == req.quest_id:
+                quest.status = QuestStatus.COMPLETED
+                leveled_up = rpg.player.add_xp(quest.reward_xp)
+                rpg.player.inventory.gold += quest.reward_gold
+                msg = f"Quest '{quest.title}' completada! +{quest.reward_xp} XP"
+                if leveled_up:
+                    msg += f" | LEVEL UP! Nível {rpg.player.level}!"
+                rpg.event_log.append(msg)
+                save_rpg_state(session, rpg)
+                return {"success": True, "message": msg, "leveled_up": leveled_up}
+        raise HTTPException(404, "Quest não encontrada")
 
 
 # ─── ROLAGEM MANUAL ───────────────────────────────────────────────────────────
@@ -232,13 +235,14 @@ class RollRequest(BaseModel):
 
 @router.post("/roll")
 async def manual_roll(req: RollRequest):
-    session = _get_session(req.session_id)
-    rpg = get_rpg_state(session)
-    modifier = get_roll_modifier(rpg.player, req.attribute) if rpg.player and req.attribute else 0
-    result = roll_d20(modifier)
-    attr = f" ({req.attribute})" if req.attribute else ""
-    rpg.event_log.append(
-        f"Rolagem{attr}: {result['natural']} + {modifier} = {result['final']} [{result['label']}]"
-    )
-    save_rpg_state(session, rpg)
-    return result
+    async with session_lock(req.session_id):
+        session = _get_session(req.session_id)
+        rpg = get_rpg_state(session)
+        modifier = get_roll_modifier(rpg.player, req.attribute) if rpg.player and req.attribute else 0
+        result = roll_d20(modifier)
+        attr = f" ({req.attribute})" if req.attribute else ""
+        rpg.event_log.append(
+            f"Rolagem{attr}: {result['natural']} + {modifier} = {result['final']} [{result['label']}]"
+        )
+        save_rpg_state(session, rpg)
+        return result

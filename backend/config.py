@@ -14,6 +14,10 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Servidor
 HOST = os.environ.get("RPG_HOST", "127.0.0.1")
 PORT = int(os.environ.get("RPG_PORT", "8000"))
+# Hosts aceitos no cabeçalho Host/Origin (contra DNS rebinding e CSRF). "*.ts.net" cobre o `tailscale serve`;
+# "testserver" é o host do TestClient. RPG_ALLOWED_HOSTS acrescenta outros, separados por vírgula.
+ALLOWED_HOSTS = ["127.0.0.1", "localhost", "::1", "testserver", "*.ts.net", HOST] + [
+    h.strip().lower() for h in os.environ.get("RPG_ALLOWED_HOSTS", "").split(",") if h.strip()]
 
 # Ollama
 OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")

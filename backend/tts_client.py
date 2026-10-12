@@ -32,12 +32,28 @@ def speakable_text(text: str, dialogue_only: bool) -> str:
     return text
 
 
+def _is_network_path(path: str) -> bool:
+    # \\servidor\pasta ou //servidor: abrir já dispara uma conexão SMB/WebDAV.
+    return path.replace("/", "\\").startswith("\\\\")
+
+
+def _piper_bin() -> Optional[str]:
+    """Caminho do executável do Piper, ou None se não for um piper local válido."""
+    b = get_settings()["piper_bin"].strip()
+    if not b or _is_network_path(b) or os.path.splitext(os.path.basename(b))[0].lower() != "piper":
+        return None
+    if os.path.basename(b) == b:  # só o nome: procura no PATH
+        return shutil.which(b)
+    return b if os.path.isfile(b) else None
+
+
 def piper_ready() -> Optional[str]:
     """Devolve None se o Piper está pronto, senão o motivo."""
     s = get_settings()
-    if not shutil.which(s["piper_bin"]) and not os.path.isfile(s["piper_bin"]):
+    if not _piper_bin():
         return f"Piper não encontrado ('{s['piper_bin']}'). Instale e ajuste o caminho nas Configurações."
-    if not s["piper_model"] or not os.path.isfile(s["piper_model"]):
+    model = s["piper_model"]
+    if not model or _is_network_path(model) or not model.lower().endswith(".onnx") or not os.path.isfile(model):
         return "Modelo de voz (.onnx) do Piper não configurado."
     return None
 
@@ -58,7 +74,7 @@ async def synthesize(text: str) -> bytes:
     os.close(fd)
     try:
         proc = await asyncio.create_subprocess_exec(
-            s["piper_bin"], "--model", s["piper_model"], "--output_file", out_path,
+            _piper_bin(), "--model", s["piper_model"], "--output_file", out_path,
             "--length_scale", str(round(1.0 / s["tts_rate"], 2)),
             stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.DEVNULL,
