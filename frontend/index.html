@@ -2,10 +2,18 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#111118" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="RPG IA" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png" />
   <title>RPG IA</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
-  <link rel="stylesheet" href="/static/css/style.css?v=12" />
+  <link rel="stylesheet" href="/static/css/style.css?v=13" />
+  <link rel="stylesheet" href="/static/css/theme.css?v=3" />
 </head>
 <body>
 
@@ -13,41 +21,62 @@
 
 <!-- TELA 1: SELEÇÃO DE PERSONAGEM -->
 <div id="screen-select" class="screen active">
+  <header class="home-bar">
+    <div class="home-brand">
+      <img class="home-logo" src="/static/icons/icon-192.png" alt="" />
+      <span>RPG <span class="accent">IA</span></span>
+    </div>
+    <div id="status-bar" class="status-bar">
+      <span id="status-dot" class="dot offline"></span>
+      <span id="status-text">Verificando Ollama...</span>
+    </div>
+    <div class="home-actions">
+      <button class="icon-btn" data-action="open-profile" title="Meu perfil: quem você é, em todas as histórias">👤<span class="icon-btn-label">Meu perfil</span></button>
+      <button class="icon-btn" data-action="open-settings" title="Configurações">⚙️<span class="icon-btn-label">Configurações</span></button>
+    </div>
+  </header>
   <div class="select-container">
-    <div class="logo">
-      <span class="logo-icon">⚔️</span>
-      <h1>RPG <span class="accent">IA</span></h1>
-      <p class="subtitle">Quem vai te acompanhar hoje?</p>
-    </div>
-    <div class="select-toolbar">
-      <div id="status-bar" class="status-bar">
-        <span id="status-dot" class="dot offline"></span>
-        <span id="status-text">Verificando Ollama...</span>
-      </div>
-      <button class="btn-secondary-sm" data-action="open-profile" title="Quem você é, em todas as histórias">👤 Meu perfil</button>
-      <button class="btn-secondary-sm" data-action="new-character">➕ Novo personagem</button>
-      <button class="btn-secondary-sm" data-action="open-settings">⚙️ Configurações</button>
-    </div>
-    <div id="character-grid" class="character-grid">
-      <div class="loading-spinner">Carregando personagens...</div>
-    </div>
-    <div id="saved-sessions-section" class="saved-sessions-section" style="display:none">
-      <h3>Continuar conversa</h3>
+    <section class="home-hero">
+      <h1>Quem vai te acompanhar hoje?</h1>
+      <p class="subtitle">Escolha alguém, entre na história e decida o que acontece.</p>
+      <button class="adventure-cta" data-action="new-adventure">
+        <span class="adventure-cta-icon" aria-hidden="true">✨</span>
+        <span class="adventure-cta-text"><strong>Criar aventura</strong>
+          <span>Escreva uma ideia e o narrador monta a história para você jogar</span></span>
+        <span class="adventure-cta-arrow" aria-hidden="true">→</span>
+      </button>
+    </section>
+    <section id="saved-sessions-section" class="saved-sessions-section" style="display:none">
+      <h3 class="home-section-title">Continuar</h3>
       <div id="saved-sessions-list" class="saved-sessions-list"></div>
-    </div>
+    </section>
+    <section class="home-characters">
+      <div class="home-section-head">
+        <h3 class="home-section-title">Personagens</h3>
+        <button class="btn-create" data-action="new-character">＋ Criar personagem</button>
+      </div>
+      <div id="tag-filter" class="tag-filter"></div>
+      <div id="character-grid" class="character-grid">
+        <div class="loading-spinner">Carregando personagens...</div>
+      </div>
+    </section>
   </div>
 </div>
 
 <!-- MODAL: SELEÇÃO DE MODO -->
 <div id="modal-mode" class="modal-overlay" style="display:none">
   <div class="modal">
-    <div class="modal-header">
+    <div class="mode-cover" id="mode-cover">
       <span id="modal-char-avatar" class="modal-avatar">👤</span>
-      <div>
+      <div class="mode-cover-info">
         <div id="modal-char-name" class="modal-char-name">Personagem</div>
-        <div class="modal-subtitle">Como você quer jogar?</div>
+        <div id="modal-char-world" class="modal-char-world"></div>
       </div>
     </div>
+    <p id="modal-char-summary" class="mode-summary"></p>
+    <div id="modal-char-scenario" class="mode-scenario"></div>
+    <div id="modal-char-tags" class="char-card-tags"></div>
+    <div class="modal-subtitle mode-question">Como você quer jogar?</div>
     <div id="prompt-warning" class="form-error" style="display:none"></div>
     <div class="mode-cards">
       <div class="mode-card" data-action="select-mode" data-mode="narrative">
@@ -171,20 +200,27 @@
     <div class="resize-handle" id="resize-left"></div>
 
     <!-- COLUNA 2: Chat principal -->
-    <div class="chat-main" style="flex:1;min-width:400px">
+    <div class="chat-main">
       <div class="chat-topbar">
-        <button class="btn-back-sm" data-action="go-back">← Sair</button>
-        <div class="chat-topbar-info">
-          <span id="topbar-char-name"></span>
-          <span id="topbar-session" class="topbar-session"></span>
+        <button class="btn-back-sm" data-action="go-back" title="Voltar para os personagens">←<span class="back-label"> Sair</span></button>
+        <div class="chat-topbar-info" data-action="toggle-panel" data-panel="char-panel" title="Personagem e dados">
+          <span id="topbar-avatar" class="topbar-avatar" aria-hidden="true"></span>
+          <span class="topbar-text">
+            <span id="topbar-char-name"></span>
+            <span id="topbar-session" class="topbar-session"></span>
+          </span>
         </div>
-        <button class="btn-secondary-sm" data-action="generate-scene" id="btn-scene" title="Gerar imagem da cena atual">🖼️ Cena</button>
-        <button class="btn-secondary-sm" data-action="export-chat" title="Baixar esta conversa em texto">📄 Exportar</button>
-        <button class="btn-secondary-sm" data-action="open-lore" title="Fatos do mundo que entram quando você os cita">📚 Fatos</button>
-        <button class="btn-secondary-sm" data-action="open-memory" title="Ver e editar a memória da história">🧠 Memória</button>
-        <button class="btn-secondary-sm" data-action="toggle-autoplay" id="btn-autoplay" title="Ler as respostas em voz alta">🔇 Voz</button>
-        <button class="btn-secondary-sm" data-action="open-settings" title="Configurações">⚙️</button>
-        <button class="btn-secondary-sm" data-action="new-chat">🗑️ Nova</button>
+        <button class="btn-secondary-sm mobile-only" data-action="toggle-panel" data-panel="sidebar" title="Status, inventário e missões">📊</button>
+        <button class="btn-secondary-sm mobile-only" data-action="toggle-tools" title="Mais opções">⋯</button>
+        <div class="chat-tools" id="chat-tools">
+          <button class="btn-secondary-sm" data-action="generate-scene" id="btn-scene" title="Gerar imagem da cena atual">🖼️ Cena</button>
+          <button class="btn-secondary-sm" data-action="export-chat" title="Baixar esta conversa em texto">📄 Exportar</button>
+          <button class="btn-secondary-sm" data-action="open-lore" title="Fatos do mundo que entram quando você os cita">📚 Fatos</button>
+          <button class="btn-secondary-sm" data-action="open-memory" title="Ver e editar a memória da história">🧠 Memória</button>
+          <button class="btn-secondary-sm" data-action="toggle-autoplay" id="btn-autoplay" title="Ler as respostas em voz alta">🔇 Voz</button>
+          <button class="btn-secondary-sm" data-action="open-settings" title="Configurações">⚙️</button>
+          <button class="btn-secondary-sm" data-action="new-chat">🗑️ Nova</button>
+        </div>
       </div>
       <div id="messages" class="messages"></div>
       <div class="input-area">
@@ -248,6 +284,9 @@
         </div>
       </div>
     </div>
+
+    <!-- Celular: fundo escuro atrás das gavetas laterais; tocar nele fecha -->
+    <div class="panel-backdrop" id="panel-backdrop" data-action="close-panels"></div>
 
   </div>
 </div>
@@ -314,6 +353,31 @@
   </div>
 </div>
 
+<!-- MODAL: NOVA AVENTURA -->
+<div id="modal-adventure" class="modal-overlay" style="display:none">
+  <div class="modal modal-wide">
+    <h3 class="modal-title">✨ Criar aventura</h3>
+    <p class="modal-help">Conte em uma ou duas frases quem você é e o que está acontecendo. O narrador cria o mundo, os personagens e a primeira cena.</p>
+    <div id="adventure-form">
+      <textarea id="adventure-idea" rows="4" maxlength="600"
+        placeholder="Ex: Sou o novo zelador de uma biblioteca onde os livros proibidos sussurram à noite."></textarea>
+      <button class="btn-surprise" data-action="surprise-adventure">🎲 Me surpreenda</button>
+      <div class="adventure-label">Gênero (opcional)</div>
+      <div id="adventure-genres" class="adventure-genres"></div>
+    </div>
+    <div id="adventure-loading" class="adventure-loading" style="display:none">
+      <div class="adventure-orb" aria-hidden="true">📜</div>
+      <div id="adventure-loading-text" class="adventure-loading-text">O narrador está pensando no mundo...</div>
+      <div class="adventure-loading-hint">Leva um minuto ou dois no seu PC.</div>
+    </div>
+    <div id="adventure-error" class="form-error" style="display:none"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" data-action="close-adventure" id="btn-cancel-adventure">Cancelar</button>
+      <button class="btn-primary" data-action="create-adventure" id="btn-create-adventure">Criar aventura</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: EDITOR DE PERSONAGEM -->
 <div id="modal-editor" class="modal-overlay" style="display:none">
   <div class="modal modal-wide">
@@ -330,6 +394,6 @@
 </div>
 
 <script src="/static/js/dice.js?v=20"></script>
-<script type="module" src="/static/js/main.js?v=1"></script>
+<script type="module" src="/static/js/main.js?v=5"></script>
 </body>
 </html>

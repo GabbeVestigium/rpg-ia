@@ -588,3 +588,103 @@ def test_every_shipped_character_is_valid_adult_and_has_a_real_world(client):
         sid = new_session(client, char=cid)
         events = sse_events(client.post("/api/chat", json={"session_id": sid, "character_id": cid, "message": "Oi"}))
         assert events[-1]["type"] == "done" and any(e["type"] == "token" for e in events), cid
+
+
+def test_app_installable_on_phone(client):
+    m = client.get("/manifest.webmanifest")
+    assert m.status_code == 200 and m.headers["content-type"].startswith("application/manifest+json")
+    manifest = m.json()
+    assert manifest["start_url"] == "/" and manifest["display"] == "standalone"
+    for icon in manifest["icons"]:
+        assert client.get(icon["src"]).status_code == 200, icon["src"]
+    sw = client.get("/sw.js")
+    assert sw.status_code == 200 and "javascript" in sw.headers["content-type"]
+    assert sw.headers["cache-control"] == "no-cache"
+
+
+def test_choices_arrive_after_done_and_survive_reopening(client, services):
+    client.put("/api/settings", json={"auto_choices": True})
+    sid = new_session(client)
+    r = client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": "Oi"})
+    events = sse_events(r)
+    types = [e["type"] for e in events]
+    assert types.index("done") < types.index("choices")
+    options = next(e["options"] for e in events if e["type"] == "choices")
+    assert options == ["Pergunto o nome dela", "Saco a espada", "Ofereço uma bebida"]
+    assert client.get(f"/api/session/{sid}").json()["choices"] == options
+    # Desfazer a troca: as escolhas eram daquela resposta e deixam de valer.
+    client.post("/api/chat/undo", json={"session_id": sid, "character_id": "trama"})
+    assert client.get(f"/api/session/{sid}").json()["choices"] == []
+
+
+def test_opening_message_gets_choices_on_demand(client, services):
+    sid = new_session(client)
+    assert client.post("/api/chat/choices", json={"session_id": sid, "character_id": "trama"}).json() == {"options": []}
+    client.put("/api/settings", json={"auto_choices": True})
+    first = client.post("/api/chat/choices", json={"session_id": sid, "character_id": "trama"}).json()["options"]
+    assert len(first) == 3
+    calls = len(services["chat_calls"])
+    again = client.post("/api/chat/choices", json={"session_id": sid, "character_id": "trama"}).json()["options"]
+    assert again == first and len(services["chat_calls"]) == calls  # guardadas: não gera de novo
+
+
+def test_reply_stuck_in_a_loop_is_cut(client, services):
+    block = 'Ela suspira devagar, olhando a porta trancada. "Vamos lá, me chame Estela."\n\n'
+    services["reply"] = '*Ela sorri.* "Fica."\n\n' + block * 6
+    sid = new_session(client)
+    events = sse_events(client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": "Oi"}))
+    replaced = [e["text"] for e in events if e["type"] == "replace"]
+    assert replaced and replaced[0].count("me chame Estela") == 1
+    saved = client.get(f"/api/session/{sid}").json()["history"][-1]["content"]
+    assert saved == replaced[0]
+
+
+def test_adventure_is_created_from_an_idea_and_can_be_played(client, services):
+    r = client.post("/api/adventure", json={"idea": "Sou zelador de uma biblioteca assombrada", "genre": "Mistério"})
+    assert r.status_code == 200, r.text
+    cid = r.json()["id"]
+    call = services["chat_calls"][-1]
+    assert call["format"] == "json" and "zelador" in call["messages"][-1]["content"]
+    c = client.get(f"/api/characters/{cid}").json()
+    assert c["group"] and "aventura" in c["tags"] and len(c["cast"]) == 2
+    s = client.post("/api/session/new", json={"character_id": cid, "game_mode": "medium"}).json()
+    assert "Você também ouviu" in s["character"]["first_message"] and len(s["cast"]) == 2
+    # mesmo título de novo ganha outro id, sem sobrescrever
+    assert client.post("/api/adventure", json={"idea": "outra"}).json()["id"] == cid + "-2"
+
+
+def test_adventure_with_broken_reply_retries_then_explains(client, services):
+    services["adventure_reply"] = "Claro! Aqui vai uma história incrível..."
+    r = client.post("/api/adventure", json={"idea": "piratas"})
+    assert r.status_code == 422 and "Tente de novo" in r.json()["detail"]
+    assert len(services["chat_calls"]) == 2
+
+
+def test_adventure_idea_with_minor_is_refused_before_the_model(client, services):
+    r = client.post("/api/adventure", json={"idea": "uma colegial perdida"})
+    assert r.status_code == 422 and not services["chat_calls"]
+
+
+def test_adventure_options_list_genres_and_surprises(client):
+    data = client.get("/api/adventure/options").json()
+    assert "Isekai" in data["genres"] and len(data["surprises"]) >= 5
+
+
+def test_reply_gets_turn_reminder_without_saving_it(client, services):
+    sid = client.post("/api/session/new", json={"character_id": "mesa-javali"}).json()["session_id"]
+    client.post("/api/chat", json={"session_id": sid, "character_id": "mesa-javali",
+                                   "message": "Me esperaram aqui para quê?"})
+    call = services["chat_calls"][-1]
+    last = call["messages"][-1]["content"]
+    assert last.startswith("Me esperaram aqui para quê?") and "Lembrete" in last
+    assert "No máximo 2 personagens" in last and "Me esperaram aqui para quê?" in last.split("Lembrete")[1]
+    assert call["options"]["temperature"] <= 0.7  # cena de grupo: menos invenção
+    saved = client.get(f"/api/session/{sid}").json()["history"]
+    assert saved[-2]["content"] == "Me esperaram aqui para quê?"
+
+
+def test_single_character_keeps_chosen_temperature(client, services):
+    sid = client.post("/api/session/new", json={"character_id": "trama"}).json()["session_id"]
+    client.post("/api/chat", json={"session_id": sid, "character_id": "trama", "message": "Oi"})
+    call = services["chat_calls"][-1]
+    assert call["options"]["temperature"] == 0.85 and "No máximo 2" not in call["messages"][-1]["content"]

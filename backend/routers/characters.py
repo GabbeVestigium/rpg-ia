@@ -1,12 +1,16 @@
 """Rotas de personagens e mundos (listar, ler, criar, editar, apagar)."""
 
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, Field
+
+from backend.adventure import GENRES, SURPRISES, create_adventure
 
 from backend.character_manager import (
     delete_character, list_characters, list_worlds, load_character, load_world,
     save_character, save_world,
 )
 from backend.models import Character, World
+from backend.ollama_client import OllamaError
 from backend.storage import safe_id, slugify
 
 router = APIRouter(prefix="/api", tags=["characters"])
@@ -74,6 +78,28 @@ async def create_character(character: Character):
     except ValueError as e:
         raise HTTPException(422, str(e))
     return {"ok": True, "id": new_id}
+
+
+class AdventureRequest(BaseModel):
+    idea: str = Field(default="", max_length=600)
+    genre: str = Field(default="", max_length=30)
+
+
+@router.get("/adventure/options")
+async def adventure_options():
+    return {"genres": GENRES, "surprises": SURPRISES}
+
+
+@router.post("/adventure")
+async def new_adventure(req: AdventureRequest):
+    """O narrador monta uma história a partir da ideia do jogador e salva como personagem de grupo."""
+    try:
+        character = await create_adventure(req.idea, req.genre)
+    except OllamaError as e:
+        raise HTTPException(503, str(e))
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    return {"ok": True, "id": character.id, "name": character.name}
 
 
 @router.delete("/characters/{character_id}")

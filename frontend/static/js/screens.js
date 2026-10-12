@@ -2,8 +2,9 @@
 
 import { api } from './api.js';
 import { state } from './state.js';
-import { $, closeModal, escapeHtml, openModal, showScreen, toast } from './util.js';
+import { $, avatarHtml, characterHue, closeModal, escapeHtml, openModal, showScreen, toast } from './util.js';
 import { renderChat } from './messages.js';
+import { loadChoices } from './chat.js';
 import { ATTR_LABELS, setupDiceTable, setupSidebar } from './sidebar.js';
 import { loadPortrait } from './portrait.js';
 import { stopSpeaking } from './tts.js';
@@ -46,22 +47,47 @@ export async function loadCharacters() {
       grid.innerHTML = '<p class="loading-spinner">Nenhum personagem. Crie o primeiro em "Novo personagem".</p>';
       return;
     }
+    // Capa no estilo galeria: retrato quando existe, senão o emoji grande sobre a cor do personagem.
     grid.innerHTML = chars.map((c) => `
-      <div class="char-card" data-action="open-mode" data-id="${escapeHtml(c.id)}">
+      <div class="char-card${c.has_portrait ? ' has-portrait' : ''}" data-action="open-mode" data-id="${escapeHtml(c.id)}"
+           data-tags="${escapeHtml((c.tags || []).join('|'))}" style="--hue:${characterHue(c.id)}">
         <button class="char-card-edit" data-action="edit-character" data-id="${escapeHtml(c.id)}" title="Editar">✏️</button>
-        ${c.has_portrait
-          ? `<img class="char-card-img" src="/portraits/${encodeURIComponent(c.id)}.png" alt="" loading="lazy" />`
-          : `<span class="char-card-avatar">${escapeHtml(c.avatar_emoji)}</span>`}
-        <div class="char-card-name">${escapeHtml(c.name)} <span class="char-card-age">${Number(c.age)}</span></div>
-        <div class="char-card-world">${escapeHtml(c.world_id)}</div>
-        <div class="char-card-desc">${escapeHtml(c.summary)}</div>
-        <div class="char-card-scenario"><strong>Cenário:</strong> ${escapeHtml(c.scenario)}</div>
-        <div class="char-card-tags">${(c.tags || []).map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join('')}</div>
+        <div class="char-card-cover">
+          ${c.has_portrait
+            ? `<img class="char-card-img" src="/portraits/${encodeURIComponent(c.id)}.png" alt="" loading="lazy" />`
+            : `<span class="char-card-avatar">${escapeHtml(c.avatar_emoji)}</span>`}
+        </div>
+        <div class="char-card-body">
+          <div class="char-card-world">${escapeHtml(c.world_id)}</div>
+          <div class="char-card-name">${escapeHtml(c.name)} <span class="char-card-age">${Number(c.age)}</span></div>
+          <div class="char-card-desc">${escapeHtml(c.summary)}</div>
+          <div class="char-card-tags">${(c.tags || []).slice(0, 3).map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join('')}</div>
+        </div>
       </div>`).join('');
     state.characterList = chars;
+    renderTagFilter(chars);
   } catch (e) {
     grid.innerHTML = `<p class="loading-spinner">Erro: ${escapeHtml(e.message)}</p>`;
   }
+}
+
+/** Filtro por gênero (as tags mais comuns), como as abas de categoria dos apps de história. */
+function renderTagFilter(chars) {
+  const count = {};
+  chars.forEach((c) => (c.tags || []).forEach((t) => { count[t] = (count[t] || 0) + 1; }));
+  const tags = Object.keys(count).sort((a, b) => count[b] - count[a] || a.localeCompare(b)).slice(0, 12);
+  const active = state.tagFilter && tags.includes(state.tagFilter) ? state.tagFilter : '';
+  $('tag-filter').innerHTML = ['', ...tags].map((t) => `<button class="tag-chip${t === active ? ' active' : ''}"
+    data-action="filter-tag" data-tag="${escapeHtml(t)}">${t ? escapeHtml(t) : 'Todos'}</button>`).join('');
+  filterByTag(active);
+}
+
+export function filterByTag(tag) {
+  state.tagFilter = tag;
+  document.querySelectorAll('#tag-filter .tag-chip').forEach((b) => b.classList.toggle('active', b.dataset.tag === tag));
+  document.querySelectorAll('#character-grid .char-card').forEach((card) => {
+    card.style.display = !tag || card.dataset.tags.split('|').includes(tag) ? '' : 'none';
+  });
 }
 
 export async function loadSavedSessions() {
@@ -73,10 +99,13 @@ export async function loadSavedSessions() {
     const modeIcon = { narrative: '📖', medium: '⚖️', full: '🎲' };
     $('saved-sessions-list').innerHTML = sessions.map((s) => {
       const player = s.player_name ? ` · ${escapeHtml(s.player_name)} Nv${Number(s.player_level)}` : '';
-      return `<div class="session-card" data-action="continue-session" data-id="${escapeHtml(s.session_id)}">
+      const c = (state.characterList || []).find((x) => x.id === s.character_id) || {};
+      return `<div class="session-card" data-action="continue-session" data-id="${escapeHtml(s.session_id)}"
+                   style="--hue:${characterHue(s.character_id)}">
+        <span class="session-card-avatar">${c.id ? avatarHtml(c) : escapeHtml(s.character_emoji)}</span>
         <div class="session-card-info">
-          <span class="session-card-name">${escapeHtml(s.character_emoji)} ${modeIcon[s.mode] || '📖'} ${escapeHtml(s.character_name)}${player}</span>
-          <span class="session-card-meta">Sessão ${escapeHtml(s.session_id)} · ${Number(s.message_count)} msgs</span>
+          <span class="session-card-name">${escapeHtml(s.character_name)}</span>
+          <span class="session-card-meta">${modeIcon[s.mode] || '📖'}${player} · ${Number(s.message_count)} msgs</span>
         </div>
         <button class="session-card-del" data-action="delete-session" data-id="${escapeHtml(s.session_id)}" title="Apagar">🗑️</button>
       </div>`;
@@ -97,8 +126,13 @@ export function openModeModal(charId) {
   const c = (state.characterList || []).find((x) => x.id === charId);
   if (!c) return;
   state.character = { id: c.id, name: c.name, avatar_emoji: c.avatar_emoji, world_id: c.world_id, group: c.group };
-  $('modal-char-avatar').textContent = c.avatar_emoji;
+  $('modal-char-avatar').innerHTML = avatarHtml(c);
   $('modal-char-name').textContent = c.name;
+  $('modal-char-world').textContent = c.world_id || '';
+  $('modal-char-summary').textContent = c.summary || '';
+  $('modal-char-scenario').innerHTML = c.scenario ? `<strong>Cenário</strong> ${escapeHtml(c.scenario)}` : '';
+  $('modal-char-tags').innerHTML = (c.tags || []).map((t) => `<span class="tag">${escapeHtml(t)}</span>`).join('');
+  $('modal-mode').style.setProperty('--hue', characterHue(c.id));
   $('prompt-warning').style.display = 'none';
   openModal('modal-mode');
   warnIfHeavy(c.id);
@@ -250,6 +284,7 @@ export async function confirmCreatePlayer() {
     state.images = [];
     state.cast = sess.cast || [];
     state.swipe = { index: 0, count: 0 };
+    state.choices = [];
     openChatScreen(playerData.player);
   } catch (e) {
     toast(e.message, 'error', 7000);
@@ -270,6 +305,7 @@ export async function startNewChat(characterId, mode) {
     state.images = [];
     state.cast = data.cast || [];
     state.swipe = { index: 0, count: 0 };
+    state.choices = [];
     openChatScreen(null);
   } catch (e) {
     toast(e.message, 'error');
@@ -289,6 +325,7 @@ export async function continueSession(sessionId) {
     state.images = data.images || [];
     state.cast = data.cast || [];
     state.swipe = data.swipe || { index: 0, count: 0 };
+    state.choices = data.choices || [];
     openChatScreen(data.rpg_state?.player || null);
   } catch (e) {
     toast(e.message, 'error');
@@ -312,6 +349,9 @@ function openChatScreen(player) {
   $('panel-char-name').textContent = c.name || '?';
   $('panel-char-world').textContent = c.world_id || '';
   $('topbar-char-name').textContent = c.name || '?';
+  const listed = (state.characterList || []).find((x) => x.id === c.id) || c;
+  $('topbar-avatar').innerHTML = avatarHtml(listed);
+  $('screen-chat').style.setProperty('--hue', characterHue(c.id));
   $('topbar-session').textContent = `sessão: ${state.session}`;
   const labels = { narrative: '📖 Narrativo', medium: '⚖️ Médio', full: '🎲 Completo' };
   $('panel-mode-badge').textContent = labels[state.mode] || state.mode;
@@ -320,5 +360,6 @@ function openChatScreen(player) {
   setupDiceTable(state.mode);
   setupSidebar(state.mode, player, state.cast);
   renderChat();
+  loadChoices();
   $('user-input').focus();
 }

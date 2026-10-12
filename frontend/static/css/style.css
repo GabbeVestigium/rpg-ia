@@ -557,3 +557,49 @@ textarea#user-input::placeholder{color:var(--text3);}
 .char-expressions{flex-wrap:wrap;gap:6px;padding:8px 6px;}
 .expr-btn{width:32px;height:32px;}
 .expr-btn.expr-add{font-size:0.95rem;border-style:dashed;color:var(--accentb);}
+
+/* ─── CELULAR ────────────────────────────────────────────────────────────────── */
+.chat-main{flex:1;min-width:400px;}
+.chat-tools{display:flex;align-items:center;gap:12px;}
+.mobile-only{display:none;}
+.panel-backdrop{display:none;}
+
+/* Sem mouse não existe "passar por cima": as ações aparecem na última mensagem e na que você tocar. */
+@media (hover:none){
+  .message.is-last .msg-actions,.message.show-actions .msg-actions{opacity:1;}
+  .msg-action{padding:6px 12px;font-size:0.9rem;}
+}
+
+@media (max-width:768px){
+  .screen,.chat-layout{height:100vh;height:100dvh;}
+  #screen-select{padding:24px 14px;}
+
+  .chat-main{min-width:0;width:100%;}
+  .resize-handle{display:none;}
+
+  /* Colunas laterais viram gavetas, abertas pelos botões 👤 e 📊 */
+  .char-panel,.sidebar{position:fixed;top:0;bottom:0;z-index:60;width:min(300px,85vw)!important;
+    max-width:none!important;min-width:0!important;overflow-y:auto;transition:transform 0.25s ease;
+    padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);}
+  .char-panel{left:0;transform:translateX(-100%);}
+  .sidebar{right:0;transform:translateX(100%);padding:16px;padding-top:max(16px,env(safe-area-inset-top));}
+  .chat-layout.show-char-panel .char-panel,.chat-layout.show-sidebar .sidebar{transform:none;box-shadow:0 0 40px rgba(0,0,0,0.6);}
+  .panel-backdrop{display:block;position:fixed;inset:0;z-index:55;background:rgba(0,0,0,0.6);opacity:0;pointer-events:none;transition:opacity 0.25s;}
+  .chat-layout.show-char-panel .panel-backdrop,.chat-layout.show-sidebar .panel-backdrop{opacity:1;pointer-events:auto;}
+
+  .chat-topbar{flex-wrap:wrap;gap:8px;padding:8px 10px;padding-top:max(8px,env(safe-area-inset-top));}
+  .mobile-only{display:inline-flex;align-items:center;justify-content:center;font-size:1.05rem;padding:6px 10px;}
+  .topbar-session{display:none;}
+  .chat-tools{order:10;width:100%;gap:6px;overflow-x:auto;scrollbar-width:none;}
+  .chat-tools::-webkit-scrollbar{display:none;}
+
+  .messages{padding:14px 10px;gap:12px;}
+  .message{max-width:92%;}
+  .bubble{padding:11px 13px;}
+  .input-area{padding:8px 10px;padding-bottom:max(10px,env(safe-area-inset-bottom));}
+  .input-hint{display:none;}
+  textarea#user-input{font-size:16px;} /* 16px evita o zoom automático do iPhone ao tocar na caixa */
+
+  .modal{padding:20px 16px;max-height:90dvh;}
+  .toasts{left:12px;right:12px;top:max(12px,env(safe-area-inset-top));max-width:none;}
+}

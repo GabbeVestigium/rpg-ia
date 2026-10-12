@@ -20,6 +20,9 @@ http://127.0.0.1:8000 e abre o navegador. Ou use o `🎮 Iniciar RPG-IA.bat`.
 
 ## O que tem
 
+- **Criar aventura** (✨ na tela inicial): escreva uma ideia (ou toque em 🎲 Me surpreenda), escolha um gênero se quiser,
+  e o narrador monta o mundo, quem você é, o elenco e a primeira cena. A aventura fica na galeria como qualquer personagem.
+- **Botões de escolha**: depois de cada resposta aparecem 3 próximas ações; tocar numa envia como sua jogada.
 - **Chat em streaming** com botões para **regenerar**, **desfazer**, **editar** qualquer mensagem e **parar** a resposta.
   O 🔄 guarda a versão anterior: use ◀ 2/3 ▶ para voltar e escolher a melhor resposta.
 - **Memória de longo prazo**: a conversa inteira fica salva; o modelo recebe as mensagens recentes
@@ -40,6 +43,23 @@ http://127.0.0.1:8000 e abre o navegador. Ou use o `🎮 Iniciar RPG-IA.bat`.
 - **Galeria de personagens** com criador e editor na própria interface.
 - **Configurações** na interface: modelo, criatividade, contexto, tamanho das respostas, imagens, voz.
 - **RPG** em três modos: narrativo, médio e completo (atributos, HP, XP, quests, d20 automático).
+
+## Jogar no celular
+
+O RPG continua rodando no PC (a IA precisa da placa de vídeo) e o celular abre a tela dele pelo
+[Tailscale](https://tailscale.com), uma rede particular entre os seus aparelhos. Funciona em casa e na rua,
+sem abrir porta no roteador: só aparelhos logados na sua conta Tailscale chegam ao RPG.
+
+1. Instale o Tailscale no PC e no celular e entre com a **mesma conta** nos dois.
+2. Rode o `start.ps1` (ou o `.bat`). Ele liga o acesso e mostra o endereço, algo como
+   `https://seu-pc.algum-nome.ts.net`. Na primeira vez pode aparecer um link para liberar o HTTPS: abra e aprove.
+3. No celular, abra esse endereço no Chrome e toque em **⋮ > Adicionar à tela inicial** (no iPhone, Safari >
+   Compartilhar > Adicionar à Tela de Início). Vira um app com ícone próprio.
+
+No celular, as colunas laterais viram gavetas: **👤** abre o personagem e os dados, **📊** abre status,
+inventário e missões. Toque numa mensagem para ver as ações dela. O PC precisa estar ligado com o RPG aberto.
+
+Nunca use `tailscale funnel` aqui: ele publicaria o RPG para a internet inteira.
 
 ## Modelo de texto (GTX 1660, 6 GB)
 

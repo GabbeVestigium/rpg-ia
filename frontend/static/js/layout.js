@@ -46,3 +46,24 @@ export function initLayout() {
   makeResizable('resize-left', 'char-panel', 'left');
   makeResizable('resize-right', 'sidebar', 'right');
 }
+
+// Celular: as colunas laterais viram gavetas (👤 personagem e dados, 📊 status e inventário).
+const PANEL_CLASSES = { 'char-panel': 'show-char-panel', sidebar: 'show-sidebar' };
+
+export function togglePanel(panelId) {
+  const layout = document.querySelector('.chat-layout');
+  const cls = PANEL_CLASSES[panelId];
+  if (!layout || !cls) return;
+  const open = !layout.classList.contains(cls);
+  closePanels();
+  layout.classList.toggle(cls, open);
+}
+
+export function closePanels() {
+  document.querySelector('.chat-layout')?.classList.remove(...Object.values(PANEL_CLASSES));
+}
+
+// Celular: as ferramentas do chat (Cena, Memória, Voz...) ficam num menu aberto pelo ⋯.
+export function toggleTools(force) {
+  document.getElementById('chat-tools')?.classList.toggle('open', force);
+}

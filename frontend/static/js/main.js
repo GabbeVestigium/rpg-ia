@@ -1,9 +1,10 @@
 // Ponto de entrada: liga os eventos da página (delegação por data-action) e inicia o app.
 
+import { closeAdventure, createAdventure, openAdventure, pickGenre, surpriseAdventure } from './adventure.js';
 import { exportChat, restoreBackup } from './backup.js';
 import * as chat from './chat.js';
 import { deleteCharacter, editCharacter, newCharacter, saveCharacter } from './editor.js';
-import { initLayout } from './layout.js';
+import { closePanels, initLayout, togglePanel, toggleTools } from './layout.js';
 import { addLore, deleteLore, openLore, saveLore } from './lorebook.js';
 import { openMemory, saveMemory } from './memory.js';
 import { loadProfile, openProfile, saveProfile } from './profile.js';
@@ -17,8 +18,14 @@ import { $, closeModal, showScreen, toast } from './util.js';
 const actions = {
   // seleção
   'open-mode': (el) => screens.openModeModal(el.dataset.id),
+  'filter-tag': (el) => screens.filterByTag(el.dataset.tag),
   'edit-character': (el, e) => { e.stopPropagation(); editCharacter(el.dataset.id); },
   'new-character': () => newCharacter(),
+  'new-adventure': () => openAdventure(),
+  'close-adventure': () => closeAdventure(),
+  'pick-genre': (el) => pickGenre(el.dataset.genre),
+  'surprise-adventure': () => surpriseAdventure(),
+  'create-adventure': () => createAdventure(),
   'continue-session': (el) => screens.continueSession(el.dataset.id),
   'delete-session': (el, e) => { e.stopPropagation(); screens.deleteSession(el.dataset.id); },
   'select-mode': (el) => screens.selectMode(el.dataset.mode),
@@ -30,11 +37,15 @@ const actions = {
   'attr-change': (el) => screens.changeAttr(el.dataset.attr, Number(el.dataset.delta)),
   'confirm-create': () => screens.confirmCreatePlayer(),
   // chat
-  'go-back': () => screens.backToSelect(),
+  'go-back': () => { closePanels(); screens.backToSelect(); },
+  'toggle-panel': (el) => togglePanel(el.dataset.panel),
+  'close-panels': () => closePanels(),
+  'toggle-tools': () => toggleTools(),
   'new-chat': () => {
     if (confirm('Iniciar nova conversa com este personagem?')) screens.openModeModal(state.character.id);
   },
   'send': () => chat.sendMessage(),
+  'pick-choice': (el) => chat.pickChoice(el.dataset.text),
   'stop': () => chat.stopStreaming(),
   'regenerate': () => chat.regenerate(),
   'swipe-prev': () => chat.swipeVersion(-1),
@@ -73,7 +84,15 @@ const actions = {
 
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-action]');
-  if (!el || el.disabled) return;
+  // O menu ⋯ fecha ao escolher uma ferramenta ou ao tocar fora dele.
+  if (el?.dataset.action !== 'toggle-tools') toggleTools(false);
+  if (!el) {
+    // Celular: tocar numa mensagem mostra as ações dela (ouvir, editar...).
+    const msg = e.target.closest('#messages .message[data-index]');
+    if (msg && !msg.classList.contains('editing')) msg.classList.toggle('show-actions');
+    return;
+  }
+  if (el.disabled) return;
   const handler = actions[el.dataset.action];
   if (handler) handler(el, e);
 });
@@ -90,7 +109,7 @@ $('backup-file').addEventListener('change', (e) => {
 // Fecha modais com Esc.
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
-  ['modal-settings', 'modal-editor', 'modal-memory', 'modal-mode', 'modal-lore', 'modal-profile'].forEach(closeModal);
+  ['modal-settings', 'modal-adventure', 'modal-editor', 'modal-memory', 'modal-mode', 'modal-lore', 'modal-profile'].forEach(closeModal);
 });
 
 async function init() {
@@ -106,3 +125,8 @@ async function init() {
 }
 
 init().catch((e) => toast(`Erro ao iniciar: ${e.message}`, 'error'));
+
+// Deixa o app instalável na tela inicial do celular. Só funciona em https ou em 127.0.0.1.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => { /* sem service worker o site funciona igual */ });
+}

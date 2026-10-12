@@ -49,6 +49,8 @@ def load_session(session_id: str) -> Optional[SessionData]:
             swipes=data.get("swipes", []),
             swipe_index=data.get("swipe_index", 0),
             swipe_for=data.get("swipe_for", -1),
+            choices=data.get("choices", []),
+            choices_for=data.get("choices_for", ""),
         )
     except (KeyError, TypeError, ValueError):
         return None
@@ -73,6 +75,8 @@ def save_session(session: SessionData) -> None:
         "swipes":          session.swipes,
         "swipe_index":     session.swipe_index,
         "swipe_for":       session.swipe_for,
+        "choices":         session.choices,
+        "choices_for":     session.choices_for,
     })
 
 

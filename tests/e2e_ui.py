@@ -16,6 +16,7 @@ os.makedirs(SHOTS, exist_ok=True)
 tmp = tempfile.mkdtemp(prefix="rpgia-e2e-")
 data = os.path.join(tmp, "data")
 shutil.copytree(os.path.join(ROOT, "data"), data, ignore=shutil.ignore_patterns("sessions"))
+shutil.copytree(os.path.join(ROOT, "tests", "fixtures"), data, dirs_exist_ok=True)  # Mesa do Javali em grupo
 env = dict(os.environ, RPG_DATA_DIR=data, OLLAMA_BASE_URL="http://127.0.0.1:18434",
            SD_API_URL="http://127.0.0.1:18860", RPG_PORTRAITS_DIR=os.path.join(tmp, "portraits"), PYTHONPATH=ROOT + ":" + os.path.join(ROOT, "tests"))
 
@@ -83,6 +84,20 @@ try:
         check(page.locator(".message[data-index='2'] .msg-action[data-action=regenerate]").count() == 1,
               "botão regenerar na última resposta")
         page.screenshot(path=f"{SHOTS}/3-chat.png")
+
+        # Escolhas: chegam depois da resposta e, ao tocar, viram a mensagem do jogador
+        page.wait_for_selector("#choices .choice[data-action=pick-choice]", timeout=8000)
+        check(page.locator("#choices .choice").count() == 3, "3 escolhas depois da resposta")
+        page.click("#choices .choice >> nth=0")
+        page.wait_for_selector(".message.user[data-index='3']")
+        check("Pergunto o que ela quer" in page.inner_text(".message.user[data-index='3'] .bubble"),
+              "tocar numa escolha envia o texto dela")
+        page.wait_for_selector(".message.assistant[data-index='4'] .bubble:not(.typing-cursor)")
+        page.wait_for_selector("#choices .choice[data-action=pick-choice]", timeout=8000)
+        page.click("[data-action=undo]") if page.locator(".message[data-index='4'] [data-action=undo]").count() else None
+        page.wait_for_function("document.querySelectorAll('.message[data-index]').length === 3")
+        check(page.locator("#choices").count() == 0, "desfazer some com as escolhas da resposta desfeita")
+        page.fill("#user-input", "")
 
         # Regenerar
         page.hover(".message[data-index='2']")
@@ -265,6 +280,23 @@ try:
         page.click("[data-action=open-lore]")
         page.wait_for_selector("#lore-list .lore-row")
         check(page.locator("#lore-list .lore-row").count() == n + 1, "entrada nova do livro de fatos foi salva")
+        page.click("[data-action=close-lore]")
+
+        # Criar aventura: ideia, gênero, a história aparece na ficha e entra na galeria
+        page.click("[data-action=go-back]")
+        page.click("[data-action=new-adventure]")
+        page.wait_for_selector("#adventure-genres .tag-chip")
+        page.click("[data-action=surprise-adventure]")
+        check(len(page.input_value("#adventure-idea")) > 10, "Me surpreenda preenche uma ideia")
+        page.click("#adventure-genres .tag-chip:has-text('Mistério')")
+        page.screenshot(path=f"{SHOTS}/11-adventure.png")
+        page.click("#btn-create-adventure")
+        page.wait_for_selector("#modal-mode", state="visible", timeout=20000)
+        check("Biblioteca que Sussurra" in page.inner_text("#modal-char-name"), "ficha da aventura nova abre")
+        check(page.locator(".char-card:has-text('Biblioteca que Sussurra')").count() == 1, "aventura entra na galeria")
+        page.click('[data-mode="narrative"]')
+        page.wait_for_selector("#screen-chat.active")
+        check("Você também ouviu" in page.inner_text(".message.assistant .bubble"), "aventura começa pela cena de abertura")
 
         browser.close()
 finally:

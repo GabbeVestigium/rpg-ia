@@ -31,7 +31,8 @@ def services():
 @pytest.fixture(autouse=True)
 def reset_state(services):
     services.update({"chat_calls": [], "unloaded": 0, "txt2img_calls": [], "reply": None, "fail_chat": False,
-                    "inventory_reply": '{"gain":[],"lose":[],"gold":0}'})
+                    "inventory_reply": '{"gain":[],"lose":[],"gold":0}', "adventure_reply": None,
+                     "choices_reply": '["Pergunto o nome dela", "Saco a espada", "Ofereço uma bebida"]'})
     # Cada teste começa com configurações e sessões limpas.
     from backend.config import PROFILE_FILE, SESSIONS_DIR, SETTINGS_FILE
     shutil.rmtree(SESSIONS_DIR, ignore_errors=True)
@@ -40,10 +41,18 @@ def reset_state(services):
         target = os.path.join(os.environ["RPG_DATA_DIR"], folder)
         shutil.rmtree(target, ignore_errors=True)
         shutil.copytree(os.path.join(ROOT, "data", folder), target)
+        fixtures = os.path.join(ROOT, "tests", "fixtures", folder)
+        if os.path.isdir(fixtures):  # versões fixas usadas pelos testes (ex: a Mesa do Javali em grupo)
+            shutil.copytree(fixtures, target, dirs_exist_ok=True)
     shutil.rmtree(os.environ["RPG_PORTRAITS_DIR"], ignore_errors=True)  # retratos e expressões
     for f in (SETTINGS_FILE, PROFILE_FILE):
         if os.path.exists(f):
             os.remove(f)
+    # As escolhas sugeridas fazem uma chamada a mais ao modelo depois do "done"; os testes que
+    # contam chamadas ficam sem elas, e os testes das escolhas ligam de novo.
+    import json
+    with open(SETTINGS_FILE, "w", encoding="utf-8") as fh:
+        json.dump({"auto_choices": False}, fh)
 
 
 @pytest.fixture()

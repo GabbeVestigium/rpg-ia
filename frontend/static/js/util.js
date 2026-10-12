@@ -42,3 +42,20 @@ export function closeModal(id) { $(id).style.display = 'none'; }
 export function capitalize(str) {
   return str ? str.charAt(0).toUpperCase() + str.slice(1).toLowerCase() : '';
 }
+
+// Tons que ficam bonitos no fundo escuro (amarelo e verde-oliva ficam com cara de sujo, então ficam de fora).
+const HUES = [265, 330, 205, 175, 345, 290, 150, 225, 15];
+
+/** Cor própria de cada personagem, tirada do id: o mesmo personagem tem sempre a mesma cor. */
+export function characterHue(id) {
+  let h = 0;
+  for (const ch of String(id || '')) h = (h * 31 + ch.codePointAt(0)) % 9973;
+  return HUES[h % HUES.length];
+}
+
+/** Avatar pequeno: o retrato quando existe, senão o emoji. */
+export function avatarHtml(c) {
+  return c.has_portrait
+    ? `<img src="/portraits/${encodeURIComponent(c.id)}.png" alt="" loading="lazy" />`
+    : `<span>${escapeHtml(c.avatar_emoji || '👤')}</span>`;
+}

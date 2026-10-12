@@ -99,6 +99,7 @@ rpg-ia/
 GET  /api/status, /api/settings          PUT /api/settings
 GET  /api/session/{id}/export?format=md|txt   GET /api/backup   POST /api/backup/restore (zip, nunca apaga)
 GET/PUT /api/profile                     (perfil do jogador, data/profile.json; entra no prompt em qualquer modo)
+GET  /api/adventure/options              POST /api/adventure  (ideia → IA monta história e salva como personagem de grupo, backend/adventure.py)
 GET/POST /api/characters                 GET/PUT/DELETE /api/characters/{id}   GET /api/characters/{id}/prompt-size
 GET  /api/worlds, /api/worlds/{id}       PUT /api/worlds/{id}   (o mundo inclui o livro de fatos: entries)
 GET  /api/rpg/options
@@ -136,6 +137,9 @@ GET  /api/tts/status                     POST /api/tts  (Piper, devolve WAV)
 - Galeria com criador/editor de personagem na interface.
 - Configurações na interface (modelo instalado, temperatura, min_p, contexto, tamanho da resposta...).
 - RPG: 3 modos (narrativo, médio, completo), d20 automático, XP, quests, relacionamento.
+- Celular: app instalável (`frontend/manifest.webmanifest`, `frontend/sw.js` servido em `/sw.js`, ícones em
+  `static/icons/`). Abaixo de 768px as colunas viram gavetas (`togglePanel` em `layout.js`). Acesso pelo
+  `tailscale serve --bg 8000`, que o `start.ps1` liga se o Tailscale estiver instalado.
 
 ---
 
@@ -181,7 +185,8 @@ Estilo dos textos: nomes que soam como lugar e pessoa, não como tradução lite
    Padrão `num_ctx=4096` para um 7B em Q4. Dica: `OLLAMA_FLASH_ATTENTION=1` e `OLLAMA_KV_CACHE_TYPE=q8_0`.
 4. **Ollama local**: o modelo é escolhido nas Configurações. Para roleplay, 7B a 12B de RP/chat rendem
    mais que o `deepseek-r1:7b` (modelo de raciocínio, gasta tokens "pensando").
-5. **Servidor só em 127.0.0.1 e sem CORS aberto**.
+5. **Servidor só em 127.0.0.1 e sem CORS aberto**. O celular entra pelo `tailscale serve` (https, só aparelhos
+   da conta do usuário). Nunca trocar para 0.0.0.0 nem usar `tailscale funnel`: o app não tem login.
 
 ---
 

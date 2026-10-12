@@ -33,6 +33,7 @@ class NoCacheStatic(StaticFiles):
 app = FastAPI(title="RPG IA", version="3.0.0")
 
 # O servidor só escuta em 127.0.0.1, então não há CORS aberto: o frontend é servido por aqui mesmo.
+# O celular chega pelo `tailscale serve`, que repassa para 127.0.0.1 só para aparelhos da sua conta.
 os.makedirs(PORTRAITS_DIR, exist_ok=True)
 os.makedirs(SCENES_DIR, exist_ok=True)
 
@@ -47,6 +48,18 @@ for module in (system, characters, sessions, chat, images, data):
 @app.get("/")
 async def root():
     return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
+
+
+# App instalável no celular: o service worker precisa ser servido da raiz para valer no site todo.
+@app.get("/sw.js")
+async def service_worker():
+    return FileResponse(os.path.join(FRONTEND_DIR, "sw.js"), media_type="text/javascript",
+                        headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/manifest.webmanifest")
+async def manifest():
+    return FileResponse(os.path.join(FRONTEND_DIR, "manifest.webmanifest"), media_type="application/manifest+json")
 
 
 if __name__ == "__main__":

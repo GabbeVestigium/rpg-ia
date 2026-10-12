@@ -6,6 +6,7 @@ export const state = {
   mode: 'narrative',
   history: [],          // [{ role, content }] espelho do servidor
   images: [],           // [{ url, at }] cenas geradas
+  choices: [],          // escolhas sugeridas para a última resposta
   swipe: { index: 0, count: 0 },  // versões da última resposta (🔄 guarda as anteriores)
   expressions: [],      // expressões já geradas do retrato atual (ex: ['happy', 'shy'])
   allExpressions: [],   // todas as que existem
@@ -16,4 +17,5 @@ export const state = {
   settings: null,
   profile: null,        // { name, age, appearance, about } salvo em Meu perfil
   sdAvailable: false,
+  tagFilter: '',        // gênero escolhido na tela inicial ('' = todos)
 };

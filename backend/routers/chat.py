@@ -4,24 +4,34 @@ Rotas de chat: enviar mensagem, regenerar, desfazer e editar.
 A resposta sai por SSE. Cada evento é uma linha `data: {json}` com um destes tipos:
   roll   resultado de rolagem automática (modo completo)
   token  pedaço da resposta
+  replace  texto inteiro corrigido (a resposta entrou em loop e a repetição foi cortada)
   error  mensagem de erro legível
-  done   fim do stream
+  mood   clima da resposta (troca a expressão do retrato)
+  done   fim da resposta: o chat é liberado aqui
+Depois do "done", com o chat já liberado, ainda podem chegar:
+  choices    três sugestões do que o jogador pode fazer agora
+  inventory  o que a cena deu ou tirou do jogador
 """
 
 import json
+from contextlib import aclosing
 from typing import AsyncIterator, Optional
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 
 from backend.character_manager import load_character, load_world
+from backend.choices import current_choices, remember_choices, suggest_choices
 from backend.inventory_ai import apply_changes, describe, extract_changes, looks_like_item_change, revert_changes
+from backend.loop_guard import find_loop
 from backend.lorebook import select_lore
 from backend.mood import detect_mood
 from backend.memory import history_budget, prompt_window, update_summary, window_start
-from backend.models import ChatRequest, EditMessageRequest, MessageRole, RegenerateRequest, SwipeRequest
+from backend.models import ChatRequest, EditMessageRequest, Message, MessageRole, RegenerateRequest, SwipeRequest
 from backend.profile_manager import load_profile
-from backend.ollama_client import OllamaError, build_system_prompt, stream_chat
+from backend.ollama_client import (
+    OllamaError, build_system_prompt, player_name_for, stream_chat, turn_reminder,
+)
 from backend.rpg_engine import (
     auto_relationship_delta, calculate_xp_reward, cast_delta, cast_targets, detect_risk_action,
     get_roll_modifier, roll_d20,
@@ -34,6 +44,8 @@ from backend.session_manager import (
 from backend.settings_manager import get_settings
 
 router = APIRouter(prefix="/api", tags=["chat"])
+
+GROUP_MAX_TEMPERATURE = 0.7
 
 
 def _sse(event: dict) -> str:
@@ -144,20 +156,40 @@ async def _reply(session_id: str, character_id: str, user_text: Optional[str],
         world = load_world(character.world_id) if character.world_id else None
         # Fatos do livro do mundo que a conversa acabou de citar (últimas mensagens).
         lore = select_lore(world, [m.content for m in session.history[-4:]])
+        profile = load_profile()
         system_prompt = build_system_prompt(
             character, world, rpg,
             memory_summary=session.summary if settings["memory_enabled"] else "",
             response_length=settings["response_length"],
             lore_entries=lore,
-            profile=load_profile(),
+            profile=profile,
         )
+        window = prompt_window(session, system_prompt)
+        last_user = next((m.content for m in reversed(session.history) if m.role == MessageRole.USER), "")
+        reminder = turn_reminder(character, player_name_for(rpg, profile), last_user)
+        # Vai junto da última fala do jogador (só no envio, o histórico salvo não muda): nem todo
+        # modelo do Ollama aceita mensagem de sistema no meio da conversa.
+        if window and window[-1].role == MessageRole.USER:
+            window = window[:-1] + [Message(role=MessageRole.USER, content=f"{window[-1].content}\n\n{reminder}")]
+        else:
+            window = window + [Message(role=MessageRole.SYSTEM, content=reminder)]
+        # Cena com elenco grande: menos criatividade, mais coerência (o modelo inventa menos).
+        temperature = min(settings["temperature"], GROUP_MAX_TEMPERATURE) if character.group else None
 
         full = ""
         completed = False
         try:
-            async for token in stream_chat(prompt_window(session, system_prompt), system_prompt):
-                full += token
-                yield _sse({"type": "token", "t": token})
+            # aclosing: ao sair no meio (loop), fecha a conexão e o Ollama para de gerar na hora.
+            async with aclosing(stream_chat(window, system_prompt, temperature)) as tokens:
+                async for token in tokens:
+                    full += token
+                    yield _sse({"type": "token", "t": token})
+                    cut = find_loop(full)
+                    if cut is not None:
+                        # Entrou em loop: para de gerar e manda o texto sem a repetição.
+                        full = full[:cut].rstrip()
+                        yield _sse({"type": "replace", "text": full})
+                        break
             completed = True
         except OllamaError as e:
             yield _sse({"type": "error", "message": str(e)})
@@ -185,10 +217,19 @@ async def _reply(session_id: str, character_id: str, user_text: Optional[str],
                 yield _sse({"type": "mood", "mood": detect_mood(text)})   # troca a expressão do retrato
             yield _sse({"type": "done"})
             # O que vem depois do "done" roda com o chat já liberado para o jogador.
+            last_user = next((m.content for m in reversed(session.history[:-1])
+                              if m.role == MessageRole.USER), "")
+            if settings["auto_choices"]:
+                try:
+                    choices = await suggest_choices(character.name, last_user, text)
+                    if choices:
+                        remember_choices(session, choices)
+                        save_session(session)
+                        yield _sse({"type": "choices", "options": choices})
+                except Exception:
+                    pass  # as escolhas são um extra; nunca devem quebrar o chat
             if (settings["auto_inventory"] and rpg.mode != GameMode.NARRATIVE and rpg.player
                     and (user_text is not None or regen)):
-                last_user = next((m.content for m in reversed(session.history[:-1])
-                                  if m.role == MessageRole.USER), "")
                 try:
                     if looks_like_item_change(text, last_user):
                         done = apply_changes(rpg.player.inventory, await extract_changes(last_user, text))
@@ -228,6 +269,30 @@ async def regenerate(req: RegenerateRequest):
             start_swipes(session)  # a resposta atual vira a versão 1
             pop_last_assistant(session)
     return _streaming(_reply(req.session_id, req.character_id, None, regen=True))
+
+
+@router.post("/chat/choices")
+async def choices(req: RegenerateRequest):
+    """Escolhas para a resposta atual. Usado ao abrir a conversa (a primeira fala também ganha botões)."""
+    _, character = _require(req.session_id, req.character_id)
+    if not get_settings()["auto_choices"]:
+        return {"options": []}
+    async with session_lock(req.session_id):
+        session = load_session(req.session_id)
+        if not session or not session.history or session.history[-1].role != MessageRole.ASSISTANT:
+            return {"options": []}
+        options = current_choices(session)
+        if not options:
+            last_user = next((m.content for m in reversed(session.history[:-1])
+                              if m.role == MessageRole.USER), "")
+            try:
+                options = await suggest_choices(character.name, last_user, session.history[-1].content)
+            except OllamaError:
+                options = []
+            if options:
+                remember_choices(session, options)
+                save_session(session)
+    return {"options": options}
 
 
 @router.post("/chat/swipe")

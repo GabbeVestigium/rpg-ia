@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from backend.character_manager import load_character
+from backend.choices import current_choices
 from backend.models import MessageRole
 from backend.rpg_engine import cast_summary, create_player, get_roll_modifier, roll_d20
 from backend.rpg_models import (
@@ -118,6 +119,7 @@ async def get_session(session_id: str):
         "images": [i.model_dump() for i in session.images],
         "has_summary": bool(session.summary),
         "swipe": swipe_info(session),
+        "choices": current_choices(session),
         "cast": cast_summary(character.cast if character else [], rpg.cast_relations),
         "rpg_state": rpg.model_dump(mode="json") if rpg.player else None,
     }
