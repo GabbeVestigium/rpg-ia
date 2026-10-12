@@ -235,3 +235,14 @@ def test_adventure_refuses_minor_or_missing_parts():
         build_character(_adventure(title=""), "x")
     with pytest.raises(ValueError):
         build_character(_adventure(opening="Ela é adolescente e sorri."), "x")
+
+
+def test_shipped_yasmin_story_is_single_heroine_and_valid():
+    import json
+    import os
+    from backend.character_manager import validate_character
+    from backend.models import Character
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    c = Character(**json.load(open(os.path.join(root, "data", "characters", "mesa-javali.json"), encoding="utf-8")))
+    validate_character(c)
+    assert c.name == "Yasmin Corvino" and not c.group and not c.cast

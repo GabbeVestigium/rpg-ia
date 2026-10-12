@@ -41,6 +41,9 @@ def reset_state(services):
         target = os.path.join(os.environ["RPG_DATA_DIR"], folder)
         shutil.rmtree(target, ignore_errors=True)
         shutil.copytree(os.path.join(ROOT, "data", folder), target)
+        fixtures = os.path.join(ROOT, "tests", "fixtures", folder)
+        if os.path.isdir(fixtures):  # versões fixas usadas pelos testes (ex: a Mesa do Javali em grupo)
+            shutil.copytree(fixtures, target, dirs_exist_ok=True)
     shutil.rmtree(os.environ["RPG_PORTRAITS_DIR"], ignore_errors=True)  # retratos e expressões
     for f in (SETTINGS_FILE, PROFILE_FILE):
         if os.path.exists(f):
