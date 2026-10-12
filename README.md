@@ -20,6 +20,9 @@ http://127.0.0.1:8000 e abre o navegador. Ou use o `🎮 Iniciar RPG-IA.bat`.
 
 ## O que tem
 
+- **Criar aventura** (✨ na tela inicial): escreva uma ideia (ou toque em 🎲 Me surpreenda), escolha um gênero se quiser,
+  e o narrador monta o mundo, quem você é, o elenco e a primeira cena. A aventura fica na galeria como qualquer personagem.
+- **Botões de escolha**: depois de cada resposta aparecem 3 próximas ações; tocar numa envia como sua jogada.
 - **Chat em streaming** com botões para **regenerar**, **desfazer**, **editar** qualquer mensagem e **parar** a resposta.
   O 🔄 guarda a versão anterior: use ◀ 2/3 ▶ para voltar e escolher a melhor resposta.
 - **Memória de longo prazo**: a conversa inteira fica salva; o modelo recebe as mensagens recentes

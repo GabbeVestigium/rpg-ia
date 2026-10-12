@@ -13,7 +13,7 @@
   <title>RPG IA</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
   <link rel="stylesheet" href="/static/css/style.css?v=13" />
-  <link rel="stylesheet" href="/static/css/theme.css?v=2" />
+  <link rel="stylesheet" href="/static/css/theme.css?v=3" />
 </head>
 <body>
 
@@ -39,6 +39,12 @@
     <section class="home-hero">
       <h1>Quem vai te acompanhar hoje?</h1>
       <p class="subtitle">Escolha alguém, entre na história e decida o que acontece.</p>
+      <button class="adventure-cta" data-action="new-adventure">
+        <span class="adventure-cta-icon" aria-hidden="true">✨</span>
+        <span class="adventure-cta-text"><strong>Criar aventura</strong>
+          <span>Escreva uma ideia e o narrador monta a história para você jogar</span></span>
+        <span class="adventure-cta-arrow" aria-hidden="true">→</span>
+      </button>
     </section>
     <section id="saved-sessions-section" class="saved-sessions-section" style="display:none">
       <h3 class="home-section-title">Continuar</h3>
@@ -347,6 +353,31 @@
   </div>
 </div>
 
+<!-- MODAL: NOVA AVENTURA -->
+<div id="modal-adventure" class="modal-overlay" style="display:none">
+  <div class="modal modal-wide">
+    <h3 class="modal-title">✨ Criar aventura</h3>
+    <p class="modal-help">Conte em uma ou duas frases quem você é e o que está acontecendo. O narrador cria o mundo, os personagens e a primeira cena.</p>
+    <div id="adventure-form">
+      <textarea id="adventure-idea" rows="4" maxlength="600"
+        placeholder="Ex: Sou o novo zelador de uma biblioteca onde os livros proibidos sussurram à noite."></textarea>
+      <button class="btn-surprise" data-action="surprise-adventure">🎲 Me surpreenda</button>
+      <div class="adventure-label">Gênero (opcional)</div>
+      <div id="adventure-genres" class="adventure-genres"></div>
+    </div>
+    <div id="adventure-loading" class="adventure-loading" style="display:none">
+      <div class="adventure-orb" aria-hidden="true">📜</div>
+      <div id="adventure-loading-text" class="adventure-loading-text">O narrador está pensando no mundo...</div>
+      <div class="adventure-loading-hint">Leva um minuto ou dois no seu PC.</div>
+    </div>
+    <div id="adventure-error" class="form-error" style="display:none"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" data-action="close-adventure" id="btn-cancel-adventure">Cancelar</button>
+      <button class="btn-primary" data-action="create-adventure" id="btn-create-adventure">Criar aventura</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: EDITOR DE PERSONAGEM -->
 <div id="modal-editor" class="modal-overlay" style="display:none">
   <div class="modal modal-wide">
@@ -363,6 +394,6 @@
 </div>
 
 <script src="/static/js/dice.js?v=20"></script>
-<script type="module" src="/static/js/main.js?v=4"></script>
+<script type="module" src="/static/js/main.js?v=5"></script>
 </body>
 </html>

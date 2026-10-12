@@ -99,6 +99,7 @@ rpg-ia/
 GET  /api/status, /api/settings          PUT /api/settings
 GET  /api/session/{id}/export?format=md|txt   GET /api/backup   POST /api/backup/restore (zip, nunca apaga)
 GET/PUT /api/profile                     (perfil do jogador, data/profile.json; entra no prompt em qualquer modo)
+GET  /api/adventure/options              POST /api/adventure  (ideia → IA monta história e salva como personagem de grupo, backend/adventure.py)
 GET/POST /api/characters                 GET/PUT/DELETE /api/characters/{id}   GET /api/characters/{id}/prompt-size
 GET  /api/worlds, /api/worlds/{id}       PUT /api/worlds/{id}   (o mundo inclui o livro de fatos: entries)
 GET  /api/rpg/options

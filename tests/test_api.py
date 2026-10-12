@@ -637,3 +637,34 @@ def test_reply_stuck_in_a_loop_is_cut(client, services):
     assert replaced and replaced[0].count("me chame Estela") == 1
     saved = client.get(f"/api/session/{sid}").json()["history"][-1]["content"]
     assert saved == replaced[0]
+
+
+def test_adventure_is_created_from_an_idea_and_can_be_played(client, services):
+    r = client.post("/api/adventure", json={"idea": "Sou zelador de uma biblioteca assombrada", "genre": "Mistério"})
+    assert r.status_code == 200, r.text
+    cid = r.json()["id"]
+    call = services["chat_calls"][-1]
+    assert call["format"] == "json" and "zelador" in call["messages"][-1]["content"]
+    c = client.get(f"/api/characters/{cid}").json()
+    assert c["group"] and "aventura" in c["tags"] and len(c["cast"]) == 2
+    s = client.post("/api/session/new", json={"character_id": cid, "game_mode": "medium"}).json()
+    assert "Você também ouviu" in s["character"]["first_message"] and len(s["cast"]) == 2
+    # mesmo título de novo ganha outro id, sem sobrescrever
+    assert client.post("/api/adventure", json={"idea": "outra"}).json()["id"] == cid + "-2"
+
+
+def test_adventure_with_broken_reply_retries_then_explains(client, services):
+    services["adventure_reply"] = "Claro! Aqui vai uma história incrível..."
+    r = client.post("/api/adventure", json={"idea": "piratas"})
+    assert r.status_code == 422 and "Tente de novo" in r.json()["detail"]
+    assert len(services["chat_calls"]) == 2
+
+
+def test_adventure_idea_with_minor_is_refused_before_the_model(client, services):
+    r = client.post("/api/adventure", json={"idea": "uma colegial perdida"})
+    assert r.status_code == 422 and not services["chat_calls"]
+
+
+def test_adventure_options_list_genres_and_surprises(client):
+    data = client.get("/api/adventure/options").json()
+    assert "Isekai" in data["genres"] and len(data["surprises"]) >= 5

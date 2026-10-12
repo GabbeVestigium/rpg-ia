@@ -279,6 +279,23 @@ try:
         page.click("[data-action=open-lore]")
         page.wait_for_selector("#lore-list .lore-row")
         check(page.locator("#lore-list .lore-row").count() == n + 1, "entrada nova do livro de fatos foi salva")
+        page.click("[data-action=close-lore]")
+
+        # Criar aventura: ideia, gênero, a história aparece na ficha e entra na galeria
+        page.click("[data-action=go-back]")
+        page.click("[data-action=new-adventure]")
+        page.wait_for_selector("#adventure-genres .tag-chip")
+        page.click("[data-action=surprise-adventure]")
+        check(len(page.input_value("#adventure-idea")) > 10, "Me surpreenda preenche uma ideia")
+        page.click("#adventure-genres .tag-chip:has-text('Mistério')")
+        page.screenshot(path=f"{SHOTS}/11-adventure.png")
+        page.click("#btn-create-adventure")
+        page.wait_for_selector("#modal-mode", state="visible", timeout=20000)
+        check("Biblioteca que Sussurra" in page.inner_text("#modal-char-name"), "ficha da aventura nova abre")
+        check(page.locator(".char-card:has-text('Biblioteca que Sussurra')").count() == 1, "aventura entra na galeria")
+        page.click('[data-mode="narrative"]')
+        page.wait_for_selector("#screen-chat.active")
+        check("Você também ouviu" in page.inner_text(".message.assistant .bubble"), "aventura começa pela cena de abertura")
 
         browser.close()
 finally:

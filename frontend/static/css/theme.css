@@ -212,3 +212,32 @@
   .create-form .form-row{flex-direction:column;gap:20px;}
 }
 @keyframes sheetUp{from{transform:translateY(40px);opacity:0;}to{transform:none;opacity:1;}}
+
+/* ─── CRIAR AVENTURA ──────────────────────────────────────────────────────────── */
+.adventure-cta{margin-top:18px;width:100%;max-width:560px;display:flex;align-items:center;gap:14px;text-align:left;cursor:pointer;
+  padding:14px 18px;border-radius:16px;color:var(--text);border:1px solid hsl(265 60% 62% / 0.45);
+  background:linear-gradient(120deg,hsl(265 55% 40% / 0.35),hsl(330 55% 40% / 0.22));box-shadow:0 6px 26px var(--accentglow);
+  transition:transform .15s,filter .15s;}
+.adventure-cta:hover{filter:brightness(1.12);transform:translateY(-1px);}
+.adventure-cta-icon{font-size:1.7rem;line-height:1;}
+.adventure-cta-text{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0;}
+.adventure-cta-text strong{font-size:1.02rem;}
+.adventure-cta-text span{font-size:0.84rem;color:var(--text2);}
+.adventure-cta-arrow{font-size:1.2rem;color:#cdb8ff;}
+#adventure-idea{width:100%;resize:vertical;min-height:96px;padding:12px 14px;border-radius:12px;background:var(--bg3);
+  border:1px solid var(--border);color:var(--text);font:inherit;font-size:0.95rem;line-height:1.5;}
+#adventure-idea:focus{outline:none;border-color:var(--accent);}
+.btn-surprise{margin-top:8px;background:var(--bg3);border:1px dashed var(--borderl);color:var(--text2);border-radius:999px;
+  padding:6px 14px;font-size:0.85rem;cursor:pointer;}
+.btn-surprise:hover{color:var(--text);border-color:var(--accent);}
+.adventure-label{margin:16px 0 8px;font-size:0.78rem;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:1.2px;}
+.adventure-genres{display:flex;flex-wrap:wrap;gap:8px;}
+.adventure-loading{display:flex;flex-direction:column;align-items:center;gap:10px;padding:34px 10px;text-align:center;}
+.adventure-orb{font-size:2.6rem;animation:adventure-float 2.4s ease-in-out infinite;filter:drop-shadow(0 0 18px var(--accentglow));}
+.adventure-loading-text{font-size:1rem;color:var(--text);}
+.adventure-loading-hint{font-size:0.82rem;color:var(--text2);}
+@keyframes adventure-float{0%,100%{transform:translateY(0) rotate(-4deg);}50%{transform:translateY(-8px) rotate(4deg);}}
+@media (max-width:768px){
+  .adventure-cta{padding:12px 14px;margin-top:14px;}
+  .adventure-cta-text span{font-size:0.8rem;}
+}

@@ -287,8 +287,10 @@ async def stream_chat(messages: List[Message], system_prompt: str) -> AsyncItera
         raise OllamaError("O modelo demorou demais para responder.")
 
 
-async def complete(prompt: str, system: str = "", num_predict: int = 300, temperature: float = 0.3) -> str:
-    """Chamada simples sem streaming, para tarefas internas (resumo, tags de cena)."""
+async def complete(prompt: str, system: str = "", num_predict: int = 300, temperature: float = 0.3,
+                   json_mode: bool = False) -> str:
+    """Chamada simples sem streaming, para tarefas internas (resumo, tags de cena).
+    json_mode pede ao Ollama uma resposta que seja JSON válido."""
     settings = get_settings()
     model = await resolve_model()
     options = _options(settings, num_predict)
@@ -299,10 +301,13 @@ async def complete(prompt: str, system: str = "", num_predict: int = 300, temper
     messages.append({"role": "user", "content": prompt})
     try:
         async with httpx.AsyncClient(timeout=httpx.Timeout(300.0, connect=5.0)) as client:
-            r = await client.post(f"{OLLAMA_BASE_URL}/api/chat", json={
+            payload = {
                 "model": model, "messages": messages, "stream": False,
                 "keep_alive": settings["keep_alive"], "options": options,
-            })
+            }
+            if json_mode:
+                payload["format"] = "json"
+            r = await client.post(f"{OLLAMA_BASE_URL}/api/chat", json=payload)
             r.raise_for_status()
             return strip_think(r.json().get("message", {}).get("content", ""))
     except httpx.ConnectError:

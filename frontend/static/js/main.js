@@ -1,5 +1,6 @@
 // Ponto de entrada: liga os eventos da página (delegação por data-action) e inicia o app.
 
+import { closeAdventure, createAdventure, openAdventure, pickGenre, surpriseAdventure } from './adventure.js';
 import { exportChat, restoreBackup } from './backup.js';
 import * as chat from './chat.js';
 import { deleteCharacter, editCharacter, newCharacter, saveCharacter } from './editor.js';
@@ -20,6 +21,11 @@ const actions = {
   'filter-tag': (el) => screens.filterByTag(el.dataset.tag),
   'edit-character': (el, e) => { e.stopPropagation(); editCharacter(el.dataset.id); },
   'new-character': () => newCharacter(),
+  'new-adventure': () => openAdventure(),
+  'close-adventure': () => closeAdventure(),
+  'pick-genre': (el) => pickGenre(el.dataset.genre),
+  'surprise-adventure': () => surpriseAdventure(),
+  'create-adventure': () => createAdventure(),
   'continue-session': (el) => screens.continueSession(el.dataset.id),
   'delete-session': (el, e) => { e.stopPropagation(); screens.deleteSession(el.dataset.id); },
   'select-mode': (el) => screens.selectMode(el.dataset.mode),
@@ -103,7 +109,7 @@ $('backup-file').addEventListener('change', (e) => {
 // Fecha modais com Esc.
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
-  ['modal-settings', 'modal-editor', 'modal-memory', 'modal-mode', 'modal-lore', 'modal-profile'].forEach(closeModal);
+  ['modal-settings', 'modal-adventure', 'modal-editor', 'modal-memory', 'modal-mode', 'modal-lore', 'modal-profile'].forEach(closeModal);
 });
 
 async function init() {

@@ -204,3 +204,34 @@ def test_parse_choices_handles_json_lists_and_numbered_lines():
     assert parse_choices("sem nada útil") == []
     long = parse_choices('["' + "palavra " * 30 + '"]')[0]
     assert len(long) <= 91 and long.endswith("…")
+
+
+# ─── Criar aventura ──────────────────────────────────────────────────────────
+
+def _adventure(**over):
+    import copy
+    from fake_services import ADVENTURE
+    data = copy.deepcopy(ADVENTURE)
+    data.update(over)
+    return data
+
+
+def test_adventure_becomes_group_character_with_narrator():
+    from backend.adventure import build_character
+    c = build_character(_adventure(), "zelador de biblioteca", "Mistério")
+    assert c.group and c.name == "A Biblioteca que Sussurra"
+    assert [m.name for m in c.cast] == ["Dona", "Íris"] and c.cast[1].id == "iris"
+    assert c.tags[0] == "mistério" and "aventura" in c.tags and c.tags.count("mistério") == 1
+    assert "Íris** (27)" in c.description and "Você: O zelador novo" in c.description
+    assert "narrador" in c.personality and c.first_message.startswith("*O relógio")
+
+
+def test_adventure_refuses_minor_or_missing_parts():
+    import pytest
+    from backend.adventure import build_character
+    with pytest.raises(ValueError):
+        build_character(_adventure(cast=[{"name": "Lia", "age": 16, "about": "x"}]), "x")
+    with pytest.raises(ValueError):
+        build_character(_adventure(title=""), "x")
+    with pytest.raises(ValueError):
+        build_character(_adventure(opening="Ela é adolescente e sorri."), "x")

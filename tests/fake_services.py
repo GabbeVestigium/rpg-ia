@@ -15,7 +15,23 @@ PNG_B64 = (
 
 state = {"chat_calls": [], "unloaded": 0, "txt2img_calls": [], "reply": None, "fail_chat": False,
          "inventory_reply": '{"gain":[{"name":"Chave enferrujada","qty":1,"type":"key"}],"lose":[],"gold":0}',
+         "adventure_reply": None,
          "choices_reply": 'Opções: ["Pergunto o que ela quer de mim", "Aceito o trabalho na hora", "Peço para ver o chip"]'}
+
+ADVENTURE = {
+    "title": "A Biblioteca que Sussurra",
+    "emoji": "📚",
+    "tags": ["mistério", "sobrenatural", "terror leve"],
+    "summary": "Você é o novo zelador de uma biblioteca onde os livros proibidos falam à noite.",
+    "setting": "Ouro Preto, inverno. A Biblioteca Saturnina fecha às seis, mas a ala proibida acende sozinha às três da manhã.",
+    "player_role": "O zelador novo, contratado sem entrevista.",
+    "cast": [
+        {"name": "Dona Celeste Arruda", "age": 61, "about": "Bibliotecária-chefe, fala baixo e mente bem."},
+        {"name": "Íris", "age": "27 anos", "about": "Restauradora de livros, curiosa demais."},
+    ],
+    "scenario": "Primeira noite de trabalho, três da manhã, ala proibida.",
+    "opening": "*O relógio da praça bate três vezes.* Uma luz acende no fim do corredor.\n\n**Íris:** \"Você também ouviu, não ouviu?\"",
+}
 
 
 def make_ollama() -> FastAPI:
@@ -44,12 +60,15 @@ def make_ollama() -> FastAPI:
         is_tags = "Danbooru" in system
         is_inventory = "inventário de um jogo" in system
         is_choices = "próximas jogadas" in system
+        is_adventure = "roteirista de histórias interativas" in system
         if is_summary:
             text = "Resumo falso: Yasmin e o jogador se conheceram na taverna."
         elif is_inventory:
             text = "Claro! Aqui está o JSON: " + state["inventory_reply"]
         elif is_choices:
             text = state["choices_reply"]
+        elif is_adventure:
+            text = state["adventure_reply"] or json.dumps(ADVENTURE, ensure_ascii=False)
         elif is_tags:
             text = "tavern, night, candlelight, sitting, smile, upper body, 1girl, ELF-ears"
         else:
