@@ -9,6 +9,7 @@ import {
 } from './messages.js';
 import { currentLevel, updateCast, updateSidebar } from './sidebar.js';
 import { setMood } from './portrait.js';
+import { checkStatus } from './screens.js';
 import { speak, stopSpeaking } from './tts.js';
 
 function setStreaming(on) {
@@ -25,7 +26,7 @@ export function focusInput() {
   if (matchMedia('(hover: hover)').matches) $('user-input').focus();
 }
 
-/** Compara com o servidor e redesenha se divergiu (resposta parcial, erro, desconexão). */
+/** Compara com o servidor e redesenha se divergiu (resposta parcial, erro, desconexão). False se não conseguiu. */
 async function resync() {
   try {
     const data = await api(`/api/session/${state.session}`);
@@ -46,14 +47,18 @@ async function resync() {
       if (data.rpg_state.player.level > prev) appendLevelUp(data.rpg_state.player.level);
       updateSidebar(data.rpg_state.player, state.mode);
     }
-  } catch { /* o próximo envio tenta de novo */ }
+    return true;
+  } catch { return false; /* o próximo envio tenta de novo */ }
 }
 
 /**
  * Roda uma resposta em streaming. `path`/`body` escolhem a rota (chat ou regenerar).
  * Devolve o texto gerado.
  */
+let lastOffline = false;   // a última resposta falhou porque o servidor nem foi alcançado
+
 async function runReply(path, body) {
+  lastOffline = false;
   clearChoices();
   setStreaming(true);
   stopSpeaking();
@@ -107,7 +112,12 @@ async function runReply(path, body) {
       if (bubble && state.settings?.auto_choices !== false) renderChoices(null);
     }
   }, controller.signal)
-    .catch((e) => { if (e.name !== 'AbortError') toast(e.message, 'error', 8000); })
+    .catch((e) => {
+      if (e.name === 'AbortError') return;
+      lastOffline = !!e.offline;
+      toast(e.message, 'error', 8000);
+      checkStatus();   // o ponto de status mostra na hora se o servidor ou o Ollama caiu
+    })
     .finally(() => { finish(); if (state.session === session) dropChoicesLoading(); });
 
   await finished;
@@ -185,8 +195,15 @@ async function finishExchange(reply, userText) {
   if (reply === null) return;   // a conversa mudou no meio da resposta
   const session = state.session;
   if (reply) state.history.push({ role: 'assistant', content: reply });
-  await resync();
+  const synced = await resync();
   if (session !== state.session) return;   // saiu enquanto sincronizava: não fala na outra tela
+  if (!reply && userText && lastOffline && !synced && state.history.at(-1)?.role === 'user') {
+    // O pedido nem chegou ao servidor: a mensagem só existe aqui. Tira da tela e devolve à caixa.
+    // Se a conexão caiu depois, o servidor pode ter guardado a mensagem: fica na tela até sincronizar.
+    state.history.pop();
+    renderChat();
+    $('user-input').value = userText;
+  }
   refreshActions();
   if (!reply && userText && !state.history.some((m) => m.role === 'user' && m.content.startsWith(userText))) {
     // Nada foi gerado e o servidor descartou a mensagem: devolve o texto à caixa.

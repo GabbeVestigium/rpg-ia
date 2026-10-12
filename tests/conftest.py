@@ -15,7 +15,8 @@ os.environ["RPG_DATA_DIR"] = os.path.join(_TMP, "data")
 os.environ["OLLAMA_BASE_URL"] = "http://127.0.0.1:18434"
 os.environ["SD_API_URL"] = "http://127.0.0.1:18860"
 os.environ["RPG_PORTRAITS_DIR"] = os.path.join(_TMP, "portraits")
-shutil.copytree(os.path.join(ROOT, "data"), os.environ["RPG_DATA_DIR"], ignore=shutil.ignore_patterns("sessions"))
+shutil.copytree(os.path.join(ROOT, "data"), os.environ["RPG_DATA_DIR"], ignore=shutil.ignore_patterns(
+    "sessions", "user", "scenes", "portraits", "settings.json", "profile.json"))  # nada dos dados pessoais
 
 import fake_services  # noqa: E402
 
@@ -30,12 +31,13 @@ def services():
 
 @pytest.fixture(autouse=True)
 def reset_state(services):
-    services.update({"chat_calls": [], "unloaded": 0, "txt2img_calls": [], "reply": None, "fail_chat": False,
+    services.update({"chat_calls": [], "unloaded": 0, "txt2img_calls": [], "reply": None, "fail_chat": False, "error_mid_stream": False,
                     "inventory_reply": '{"gain":[],"lose":[],"gold":0}', "adventure_reply": None,
                      "choices_reply": '["Pergunto o nome dela", "Saco a espada", "Ofereço uma bebida"]'})
     # Cada teste começa com configurações e sessões limpas.
     from backend.config import PROFILE_FILE, SESSIONS_DIR, SETTINGS_FILE
     shutil.rmtree(SESSIONS_DIR, ignore_errors=True)
+    shutil.rmtree(os.path.join(os.environ["RPG_DATA_DIR"], "user"), ignore_errors=True)  # criados e editados
     # personagens e mundos voltam ao original (testes criam, editam e apagam)
     for folder in ("characters", "worlds"):
         target = os.path.join(os.environ["RPG_DATA_DIR"], folder)

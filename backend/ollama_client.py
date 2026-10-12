@@ -1,11 +1,12 @@
 """
 Cliente Ollama: monta o prompt, conversa com o modelo local e gerencia a VRAM.
 
-O system prompt tem quatro partes:
-1. Definição do personagem (quem é, personalidade, cenário, mundo, falas de exemplo)
-2. Estado RPG do jogador (nível, relacionamento, inventário, quests)
-3. Memória: resumo da história que já saiu da janela de contexto
-4. Regras de roleplay e tamanho da resposta
+O system prompt começa pelo que não muda de um turno para outro e termina pelo que muda, para o
+Ollama reaproveitar o começo já processado (cache do prompt):
+1. Definição do personagem (quem é, personalidade, cenário de abertura, falas de exemplo, mundo)
+2. Modo de jogo, perfil do jogador e regras de roleplay
+3. Memória (resumo da história que já saiu da janela de contexto)
+4. Fatos do livro do mundo citados agora e estado RPG do jogador (relação, HP, inventário)
 """
 
 import json
@@ -48,7 +49,7 @@ def build_system_prompt(
 
 ### Lore e regras do mundo:
 {world.lore}
-{lore_block(lore_entries or [])}"""
+"""
 
     rpg_context = ""
     if rpg_state and rpg_state.mode != GameMode.NARRATIVE:
@@ -63,7 +64,7 @@ def build_system_prompt(
             mode_instructions = """
 ## Modo de jogo: Médio
 - Leve em conta a raça e a classe do jogador ao narrar situações.
-- O relacionamento atual influencia seu tom e sua disposição.
+- O relacionamento atual ajusta seu tom e sua disposição, sem passar por cima da personalidade da ficha.
 - Mencione itens do inventário quando for relevante para a narrativa."""
         elif rpg_state.mode == GameMode.FULL:
             mode_instructions = """
@@ -71,8 +72,8 @@ def build_system_prompt(
 - Quando o jogador tentar uma ação arriscada e você receber o resultado de uma rolagem,
   narre de acordo: sucesso crítico = resultado espetacular, falha crítica = consequência grave,
   resultados parciais = algo entre os dois. Nunca ignore o resultado da rolagem.
-- Leve em conta os atributos e o HP do jogador ao narrar combates e desafios.
-- Mencione quests ativas quando relevante.
+- Leve em conta os atributos e o HP do jogador ao narrar combates e desafios. Quando a rolagem trouxer
+  dano (-N HP), narre o ferimento; com HP 0 o jogador cai ou fica à mercê da cena, sem morrer à toa.
 - Você pode sugerir itens como recompensa quando fizer sentido narrativo."""
 
     has_player = bool(rpg_state and rpg_state.player and rpg_state.player.name)
@@ -89,7 +90,7 @@ def build_system_prompt(
 
     memory = ""
     if memory_summary:
-        memory = f"\n## O que já aconteceu na história (memória):\n{memory_summary}\n"
+        memory = f"\n## O que já aconteceu na história (memória; nela, \"você\" é {player_name}):\n{memory_summary}\n"
 
     length_rule = _LENGTH_RULES.get(response_length, _LENGTH_RULES["medium"])
 
@@ -102,12 +103,12 @@ def build_system_prompt(
                     "- Quando alguém fala, comece o trecho com **Nome:** para deixar claro quem é. No máximo 2 personagens falam "
                     "em cada resposta, escolhidas conforme o lugar, o clima e quem o jogador procurou; as outras ficam em silêncio "
                     "ou aparecem só num gesto curto.\n"
-                    f"- Interprete apenas o elenco e o mundo. NUNCA escreva falas, pensamentos ou ações de {player_name}: termine sempre deixando espaço para ele reagir.")
+                    f"- Interprete apenas o elenco e o mundo. NUNCA escreva falas, pensamentos ou ações de {player_name}: termine sempre deixando espaço para {player_name} reagir.")
     else:
         intro = f"Você é {character.name}. Esteja COMPLETAMENTE no personagem o tempo todo."
         who_title, how_title = "Quem você é:", "Sua personalidade e forma de falar:"
         identity = (f"- Você é {character.name}. Nunca quebre o personagem e nunca mencione que é uma IA.\n"
-                    f"- Controle apenas {character.name}. NUNCA escreva falas, pensamentos ou ações de {player_name}: termine sempre deixando espaço para ele reagir.")
+                    f"- Controle apenas {character.name}. NUNCA escreva falas, pensamentos ou ações de {player_name}: termine sempre deixando espaço para {player_name} reagir.")
 
     return f"""{intro}
 
@@ -117,11 +118,12 @@ def build_system_prompt(
 ## {how_title}
 {character.personality}
 
-## Contexto e cenário atual:
+## Cenário de abertura (onde a história começou; a conversa e a memória mostram onde ela está agora):
 {character.scenario}
-{example}{world_context}{mode_instructions}{rpg_context}{profile_context}{memory}
+{example}{world_context}{mode_instructions}{profile_context}
 ## Regras do roleplay:
 {identity}
+- Fale com {player_name} sempre por "você" (segunda pessoa), nunca por "ele", "ela" ou "dele".
 - Escreva ações e narração entre *asteriscos* e as falas entre aspas.
 - Avance a história a cada resposta: traga um detalhe novo, uma reação, uma pergunta ou uma complicação. Não repita o que já foi dito nem resuma o que o jogador acabou de fazer.
 - Mantenha a consistência com a personalidade, o cenário e o que já aconteceu.
@@ -129,7 +131,8 @@ def build_system_prompt(
   são parte natural da narrativa. Quando a história caminhar para esse território, descreva com
   detalhe e imersão, sem cortar ou censurar. A história, os personagens e o drama vêm primeiro.
 - {length_rule}
-- Escreva SEMPRE em português do Brasil, natural e coloquial (nada de inglês nem português de Portugal)."""
+- Escreva SEMPRE em português do Brasil, natural e coloquial (nada de inglês nem português de Portugal).
+{memory}{lore_block(lore_entries or [])}{rpg_context}"""
 
 
 def build_profile_context(profile, has_player: bool) -> str:
@@ -236,11 +239,25 @@ async def list_models() -> List[str]:
 
 
 # Modelos bons de roleplay em português que cabem numa GPU de 6 GB, do preferido para o último.
-PREFERRED_MODELS = ("qwen3.5-abliterated", "qwen3-abliterated:4b-instruct", "dolphin3", "llama3.1:8b",
+# Ordem medida jogando numa GTX 1660: o 4b-instruct é o mais rápido e coerente; qwen3.5-abliterated
+# entra em loop (4b) ou roda metade na CPU (9b).
+PREFERRED_MODELS = ("qwen3-abliterated:4b-instruct", "llama3.1:8b", "dolphin3", "qwen3.5-abliterated",
                     "dolphin-mistral", "mistral")
 # Embeddings não conversam; modelos de raciocínio gastam a resposta pensando.
 _NOT_FOR_CHAT = re.compile(r"embed|r1\b|qwq|thinking|(^|/)qwen3(\.5)?:", re.I)
 FALLBACK_MODEL = "llama3.1:8b"
+# Estes ignoram "think": false e escrevem o raciocínio em inglês no meio da resposta. Com think ligado
+# o Ollama separa o raciocínio em outro campo, que descartamos; o custo é tempo e tokens a mais.
+_MUST_THINK = re.compile(r"(^|/)(qwen3|deepseek-r1|qwq):", re.I)
+THINK_EXTRA_TOKENS = 1536
+
+
+def _think_fields(model: str, options: dict) -> dict:
+    """Campo "think" do payload; para quem não desliga o raciocínio, sobra espaço para ele em num_predict."""
+    if _MUST_THINK.search(model):
+        options["num_predict"] += THINK_EXTRA_TOKENS
+        return {"think": True}
+    return {"think": False}
 
 
 def pick_model(models: List[str]) -> str:
@@ -336,6 +353,8 @@ def turn_reminder(character, player_name: str, last_user: str) -> str:
     return "\n".join(lines)
 
 
+OFFLINE = "O Ollama está desligado no PC. Abra o Ollama no PC (ou feche e abra o RPG IA)."
+
 # Sinal que stream_chat manda quando descobre que o que já saiu era raciocínio: quem lê descarta o texto.
 RESTART = "\x00restart"
 
@@ -345,7 +364,8 @@ async def _raise_for_ollama(response: httpx.Response, model: str) -> None:
     if response.status_code < 400:
         return
     if response.status_code == 404:
-        raise OllamaError(f"Modelo '{model}' não instalado. Rode: ollama pull {model}")
+        raise OllamaError(f"O modelo '{model}' não está instalado no Ollama. Escolha outro nas Configurações "
+                          f"ou instale no PC (terminal do PC): ollama pull {model}")
     body = (await response.aread()).decode(errors="ignore")
     try:
         msg = json.loads(body).get("error") or body
@@ -372,7 +392,7 @@ async def stream_chat(messages: List[Message], system_prompt: str, temperature: 
             {"role": m.role.value, "content": m.content} for m in messages
         ],
         "stream": True,
-        "think": False,   # modelos de raciocínio respondem direto em vez de gastar a resposta pensando
+        **_think_fields(model, options),   # sem raciocínio, ou com ele separado (e descartado)
         "keep_alive": settings["keep_alive"],
         "options": options,
     }
@@ -390,7 +410,7 @@ async def stream_chat(messages: List[Message], system_prompt: str, temperature: 
                     except json.JSONDecodeError:
                         continue
                     if data.get("error"):
-                        raise OllamaError(str(data["error"]))
+                        raise OllamaError(f"O Ollama deu erro no meio da resposta: {str(data['error'])[:200]}")
                     message = data.get("message", {})
                     thought = thought or bool(message.get("thinking"))
                     token = message.get("content", "")
@@ -414,11 +434,11 @@ async def stream_chat(messages: List[Message], system_prompt: str, temperature: 
             raise OllamaError("Este modelo só pensou e não respondeu (modelo de raciocínio). "
                               "Escolha outro modelo nas Configurações.")
     except httpx.ConnectError:
-        raise OllamaError("Ollama offline. Inicie com 'ollama serve'.")
+        raise OllamaError(OFFLINE)
     except httpx.TimeoutException:
         raise OllamaError("O modelo demorou demais para responder.")
-    except httpx.HTTPError as e:
-        raise OllamaError(f"A conexão com o Ollama caiu: {e}")
+    except httpx.HTTPError:
+        raise OllamaError("A conexão com o Ollama caiu no meio da resposta. Tente de novo.")
 
 
 async def complete(prompt: str, system: str = "", num_predict: int = 300, temperature: float = 0.3,
@@ -437,7 +457,7 @@ async def complete(prompt: str, system: str = "", num_predict: int = 300, temper
     try:
         async with httpx.AsyncClient(timeout=httpx.Timeout(300.0, connect=5.0)) as client:
             payload = {
-                "model": model, "messages": messages, "stream": False, "think": False,
+                "model": model, "messages": messages, "stream": False, **_think_fields(model, options),
                 "keep_alive": settings["keep_alive"], "options": options,
             }
             if json_mode:
@@ -446,9 +466,11 @@ async def complete(prompt: str, system: str = "", num_predict: int = 300, temper
             await _raise_for_ollama(r, model)
             return strip_think(r.json().get("message", {}).get("content", ""))
     except httpx.ConnectError:
-        raise OllamaError("Ollama offline. Inicie com 'ollama serve'.")
-    except httpx.HTTPError as e:
-        raise OllamaError(f"Erro ao falar com o Ollama: {e}")
+        raise OllamaError(OFFLINE)
+    except httpx.TimeoutException:
+        raise OllamaError("O modelo demorou demais para responder.")
+    except httpx.HTTPError:
+        raise OllamaError("A conexão com o Ollama caiu. Tente de novo.")
 
 
 async def unload_model() -> None:
@@ -465,6 +487,9 @@ async def check_ollama() -> dict:
     """Verifica se o Ollama está rodando e quais modelos estão instalados."""
     try:
         models = await list_models()
-        return {"status": "online", "models": models, "active_model": await resolve_model()}
+        active = await resolve_model()
+        if models and active not in models and f"{active}:latest" not in models:
+            active += " (não instalado: escolha outro nas Configurações)"
+        return {"status": "online", "models": models, "active_model": active}
     except Exception as e:
         return {"status": "offline", "error": str(e), "models": []}

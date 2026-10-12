@@ -46,3 +46,4 @@ data/scenes/
 data/settings.json
 data/profile.json
 .pytest_cache/
+data/user/

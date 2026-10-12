@@ -19,7 +19,8 @@ _SPLIT = re.compile(r"\n+|(?<=[.!?…])[\"”'*]?\s+|(?<=\*)\s+(?=\*)")
 _SPLIT_COMMAS = re.compile(_SPLIT.pattern + r"|(?<=,)\s+")
 MAX_WINDOW = 12         # até quantos trechos seguidos formam um bloco repetido
 MIN_BLOCK_CHARS = 40    # bloco curto ("Sim." "Sim.") pode ser de propósito
-SAME_RUN = 6            # mas o mesmo trecho 6 vezes seguidas é loop, curto ou não
+SAME_RUN = 6            # mas o mesmo trecho 6 vezes seguidas é loop (12 se for curto)
+SHORT_PIECE = 12        # abaixo disso o trecho é curto
 REUSE_MIN_CHARS = 40    # trecho copiado de respostas anteriores: só conta se for grande
 NEAR_MIN_CHARS = 60     # quase-cópia (uma palavra trocada) só em trechos maiores ainda
 NEAR_RATIO = 0.9
@@ -45,8 +46,10 @@ def find_loop(text: str) -> Optional[int]:
     """Posição onde começa a cópia repetida no fim do texto, ou None se não há loop."""
     segs = _segments(text, commas=True)
     norms = [_norm(s) for _, s in segs]
-    if len(norms) >= SAME_RUN and len(set(norms[-SAME_RUN:])) == 1:
-        return segs[-SAME_RUN + 1][0]   # fica a primeira, sai o resto
+    # Trecho curto ("Sim, sim, sim...") pode ser ênfase: só conta como loop se dobrar a sequência.
+    run = SAME_RUN if norms and len(norms[-1]) >= SHORT_PIECE else 2 * SAME_RUN
+    if len(norms) >= run and len(set(norms[-run:])) == 1:
+        return segs[-run + 1][0]   # fica a primeira, sai o resto
     for w in range(1, MAX_WINDOW + 1):
         if len(segs) < 2 * w:
             break

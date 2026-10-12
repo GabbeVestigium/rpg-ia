@@ -7,14 +7,17 @@ algo como "../../etc/passwd".
 """
 
 import json
+import logging
 import os
 import re
+import time
 from typing import Any, Optional
 
 from fastapi import HTTPException
 
 _WINDOWS_RESERVED = {"con", "prn", "aux", "nul",
                      *(f"com{i}" for i in range(1, 10)), *(f"lpt{i}" for i in range(1, 10))}
+log = logging.getLogger("rpg-ia")
 _ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 
 
@@ -42,9 +45,13 @@ def slugify(text: str) -> str:
 def read_json(path: str) -> Optional[Any]:
     """Lê JSON; devolve None se o arquivo não existe ou está corrompido."""
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        # utf-8-sig: o Bloco de Notas antigo salva com BOM, e o json recusaria o arquivo
+        with open(path, "r", encoding="utf-8-sig") as f:
             return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError, OSError):
+    except FileNotFoundError:
+        return None
+    except (ValueError, OSError) as e:  # ValueError cobre JSON inválido e arquivo que não é UTF-8
+        log.warning("Ignorando arquivo ilegível %s: %s", path, e)
         return None
 
 
@@ -55,7 +62,17 @@ def write_json_atomic(path: str, data: Any) -> None:
     try:
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
-        os.replace(tmp, path)
+            f.flush()
+            os.fsync(f.fileno())  # sem isso, uma queda de luz pode deixar o arquivo vazio
+        for attempt in range(5):
+            try:
+                os.replace(tmp, path)
+                break
+            except PermissionError:
+                # Windows: antivírus, indexador ou outro leitor segurando o arquivo por um instante
+                if attempt == 4:
+                    raise
+                time.sleep(0.1 * (attempt + 1))
     except Exception:
         if os.path.exists(tmp):
             os.remove(tmp)

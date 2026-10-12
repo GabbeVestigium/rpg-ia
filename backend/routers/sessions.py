@@ -50,7 +50,7 @@ async def rpg_options():
             {"id": "medium", "name": "Médio",
              "description": "Você escolhe raça e classe. A relação com o personagem passa a ser medida e você carrega um inventário."},
             {"id": "full", "name": "Completo",
-             "description": "Atributos, vida, nível, missões e dados rolando sozinhos quando você faz algo arriscado."},
+             "description": "Atributos, vida, nível e dados rolando sozinhos quando você faz algo arriscado."},
         ],
     }
 
@@ -167,6 +167,7 @@ async def create_player_endpoint(req: CreatePlayerRequest):
             custom_attributes=req.attributes, age=req.age, appearance=req.appearance,
         )
         rpg.mode = req.mode
+        rpg.turn_start = None  # desfazer não pode apagar a ficha criada depois da mensagem
         save_rpg_state(session, rpg)
         return {"success": True, "player": rpg.player.model_dump(mode="json"), "mode": req.mode.value}
 
@@ -196,6 +197,7 @@ async def add_quest(req: AddQuestRequest):
         )
         rpg.player.quests.append(quest)
         rpg.event_log.append(f"Nova quest recebida: {req.title}")
+        rpg.turn_start = None
         save_rpg_state(session, rpg)
         return {"quest_id": quest.id, "quest": quest.model_dump(mode="json")}
 
@@ -221,6 +223,7 @@ async def complete_quest(req: CompleteQuestRequest):
                 if leveled_up:
                     msg += f" | LEVEL UP! Nível {rpg.player.level}!"
                 rpg.event_log.append(msg)
+                rpg.turn_start = None
                 save_rpg_state(session, rpg)
                 return {"success": True, "message": msg, "leveled_up": leveled_up}
         raise HTTPException(404, "Quest não encontrada")
@@ -244,5 +247,6 @@ async def manual_roll(req: RollRequest):
         rpg.event_log.append(
             f"Rolagem{attr}: {result['natural']} + {modifier} = {result['final']} [{result['label']}]"
         )
+        rpg.turn_start = None
         save_rpg_state(session, rpg)
         return result

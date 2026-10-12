@@ -166,55 +166,36 @@ def _get_starter_items(char_class: str) -> list:
 
 # ─── DETECÇÃO DE AÇÕES DE RISCO ───────────────────────────────────────────────
 
-# Palavras-chave que indicam ação com risco de falha
-RISK_KEYWORDS = [
-    # Combate
-    r"\batac[oa]\b", r"\bgolp[eo]\b", r"\bcort[oa]\b", r"\bfur[ao]\b",
-    r"\bdisparo\b", r"\bchut[oa]\b", r"\bsoc[ao]\b", r"\bdesarm[ao]\b",
-    # Furtividade
-    r"\besconco\b", r"\bfurto\b", r"\broubo\b", r"\bescal[ao]\b",
-    r"\bme escondi\b", r"\bfugi\b", r"\bdesapareço\b",
-    # Persuasão/Enganação
-    r"\bconvenço\b", r"\bseduz[oa]\b", r"\bengano\b", r"\bminto\b",
-    r"\bpersuado\b", r"\bameaço\b", r"\bintimido\b",
-    # Magia/Habilidade
-    r"\bcast[oa]\b", r"\bconjur[ao]\b", r"\buso.*magia\b", r"\blanço\b",
-    r"\bhack[eo]?\b", r"\binvado\b", r"\barrombo\b",
-    # Físico
-    r"\bpulo\b", r"\bsalto\b", r"\bnadar\b", r"\bescalo\b", r"\bespremo\b",
-    r"\bquebr[ao]\b", r"\barrombo\b", r"\bforço\b",
-    # Inglês (para quem mistura)
-    r"\battack\b", r"\bstrike\b", r"\bsneak\b", r"\bpersuade\b",
+# Ações de risco por atributo, sem acento (o texto é comparado já sem acento). Cada linha tem a forma
+# em 1ª pessoa ("pulo") e o infinitivo ("pular"). Magia vem antes para "lanço um feitiço" não virar arremesso.
+_RISK_ACTIONS = [
+    ("INT", "conjuro|hackeio|decifro", "conjurar|hackear|decifrar"),
+    ("STR", "ataco|golpeio|soco|chuto|empurro|derrubo|quebro|luto|agarro|nado|desarmo|esfaqueio|arrombo",
+            "atacar|golpear|socar|chutar|empurrar|derrubar|quebrar|lutar|agarrar|nadar|desarmar|esfaquear|arrombar"),
+    ("DEX", "atiro|disparo|escondo|esgueiro|fujo|furto|roubo|escalo|pulo|salto|esquivo|desvio|arremesso|lanco",
+            "atirar|disparar|esconder|esgueirar|fugir|furtar|roubar|escalar|pular|saltar|esquivar|desviar|arremessar|lancar"),
+    ("CHA", "convenco|persuado|engano|minto|blefo|ameaco|intimido|seduzo",
+            "convencer|persuadir|enganar|mentir|blefar|ameacar|intimidar|seduzir"),
 ]
-
-COMPILED_RISK = [re.compile(p, re.IGNORECASE) for p in RISK_KEYWORDS]
-
-# Mapeamento de tipo de ação para atributo relevante
-ACTION_ATTRIBUTE_MAP = {
-    "atac": "STR", "golp": "STR", "cort": "STR", "fur": "DEX",
-    "dispar": "DEX", "chut": "STR", "soc": "STR", "desarmo": "STR",
-    "escond": "DEX", "furto": "DEX", "roubo": "DEX", "escal": "DEX",
-    "convenc": "CHA", "seduz": "CHA", "engano": "CHA", "minto": "CHA",
-    "persuad": "CHA", "ameac": "CHA", "intimid": "CHA",
-    "conjur": "INT", "magia": "INT", "lanc": "INT",
-    "hack": "INT", "invad": "INT", "arrombo": "DEX",
-    "pulo": "DEX", "salto": "DEX", "nadar": "STR", "quebr": "STR",
-}
+# A forma em 1ª pessoa só conta no começo de uma ação ("Pulo o muro", "*ataco*", "eu minto"), para "dei um
+# pulo" ou "salto alto" não rolarem dado; o infinitivo só depois de "tento", "vou"... ("vou atacar").
+_START = r"(?:^|[.!?*\n]\s*|\b(?:eu|e|entao|depois)\s+)(?:me\s+)?"
+_TRY = r"\b(?:tento|vou|tentar|consigo|preciso)\s+(?:me\s+)?"
+_MAGIC = re.compile(r"\b(?:lanco|uso|faco|conjuro)\s+(?:uma?\s+|minha\s+|meu\s+)?(?:magia|feitico)")
+_RISK = [(attr, re.compile(rf"{_START}(?:{forms})\b|{_TRY}(?:{infs})\b")) for attr, forms, infs in _RISK_ACTIONS]
 
 
 def detect_risk_action(text: str) -> Optional[str]:
     """
-    Detecta se a mensagem contém uma ação de risco.
+    Detecta se a mensagem contém uma ação de risco do jogador.
     Retorna o atributo relevante para a rolagem, ou None.
     """
-    text_lower = text.lower()
-    for pattern in COMPILED_RISK:
-        if pattern.search(text_lower):
-            # Tenta identificar o atributo relevante
-            for keyword, attr in ACTION_ATTRIBUTE_MAP.items():
-                if keyword in text_lower:
-                    return attr
-            return "STR"  # padrão se não identificar
+    folded = _fold(text)
+    if _MAGIC.search(folded):
+        return "INT"
+    for attr, pattern in _RISK:
+        if pattern.search(folded):
+            return attr
     return None
 
 
@@ -252,7 +233,7 @@ def build_rpg_context(state: RPGState, include_relationship: bool = True) -> str
     if include_relationship:
         rel = p.relationship
         lines.append(f"- Relacionamento com você: {rel.score}/100 ({rel.label})")
-        lines.append(f"  Trate o jogador de acordo com esse nível. {_relationship_guidance(rel.score)}")
+        lines.append(f"  {_relationship_guidance(rel.score)}")
 
     if state.mode == GameMode.FULL and p.attributes:
         # HP
@@ -277,10 +258,8 @@ def build_rpg_context(state: RPGState, include_relationship: bool = True) -> str
             for q in active_quests[:3]:
                 lines.append(f"  * {q.title}: {q.description[:80]}...")
 
-    # Eventos recentes
-    if state.event_log:
-        lines.append(f"- Evento recente: {state.event_log[-1]}")
-
+    # O event_log fica fora do prompt: é registro interno (desfazer, inventário revertido) e envelhece;
+    # a rolagem do turno já vai junto da mensagem do jogador.
     return "\n".join(lines)
 
 
@@ -288,7 +267,7 @@ def build_cast_context(cast, relations) -> str:
     """Bloco do prompt com como cada integrante do elenco se sente em relação ao jogador."""
     if not cast or not relations:
         return ""
-    lines = ["\n## Como cada uma se sente em relação ao jogador (cada uma age de acordo, sem sair da própria personalidade):"]
+    lines = ["\n## Como cada uma se sente em relação ao jogador (a personalidade de cada uma vem primeiro; a relação só ajusta o tom):"]
     for m in cast:
         rel = relations.get(m.id)
         if rel:
@@ -297,15 +276,16 @@ def build_cast_context(cast, relations) -> str:
 
 
 def _relationship_guidance(score: int) -> str:
+    """Ajuste de tom pela relação. A ficha manda: a relação só puxa para mais frio ou mais quente."""
     if score <= 20:
-        return "Seja hostil, desconfiado ou agressivo. Não coopere facilmente."
+        return "Relação péssima: bem mais fria, desconfiada ou hostil do que o jeito normal da ficha."
     if score <= 40:
-        return "Seja reservado e cético. Ajude pouco e com condições."
+        return "Relação fraca: mais reservada e cética do que o normal da ficha; ajuda pouco."
     if score <= 60:
-        return "Seja neutro e profissional. Responda ao que for perguntado."
+        return "Relação neutra: aja exatamente como a ficha descreve, sem intimidade nem hostilidade extra."
     if score <= 80:
-        return "Seja caloroso e cooperativo. Demonstre afeição genuína."
-    return "Seja íntimo e aberto. Compartilhe segredos. Flerte se apropriado."
+        return "Relação boa: mais calorosa e cooperativa do que o normal da ficha."
+    return "Relação íntima: aberta e de confiança, conta segredos e flerta se combinar com a personalidade."
 
 
 # ─── XP E RELACIONAMENTO AUTO ────────────────────────────────────────────────
@@ -323,22 +303,24 @@ def calculate_xp_reward(outcome: str) -> int:
     return rewards.get(outcome, 0)
 
 
+_POSITIVE = re.compile(r"\b(?:obrigad[oa]|desculp\w*|agradeco|ajudo|protejo|confio|gosto)\b")
+_NEGATIVE = re.compile(r"\b(?:ameaco|insulto|idiota|burr[oa]|traio|minto|ataco|odeio|odio)\b")
+# "não gosto", "nunca confio": a palavra boa negada conta contra; "não ataco" não conta nada.
+_NEGATION = re.compile(r"\b(?:nao|nunca|jamais|nem)\s+(?:\w+\s+)?$")
+
+
 def auto_relationship_delta(message: str) -> int:
     """
     Analisa o tom da mensagem do jogador e sugere delta de relacionamento.
     Pequeno, para não dominar a narrativa.
     """
-    positive = [r"\bobrigado\b", r"\bdesculp", r"\bagradeço\b", r"\bajudo\b",
-                r"\bprotejo\b", r"\bconfio\b", r"\bgosto\b", r"\bquero\b"]
-    negative = [r"\bameaço\b", r"\binsulto\b", r"\bidiota\b", r"\bburro\b",
-                r"\btraio\b", r"\bminto\b", r"\bataco\b", r"\bódio\b"]
-
-    text = message.lower()
+    text = _fold(message)
     score = 0
-    for p in positive:
-        if re.search(p, text): score += 2
-    for n in negative:
-        if re.search(n, text): score -= 3
+    for m in _POSITIVE.finditer(text):
+        score += -3 if _NEGATION.search(text[:m.start()]) else 2
+    for m in _NEGATIVE.finditer(text):
+        if not _NEGATION.search(text[:m.start()]):
+            score -= 3
     return max(-10, min(10, score))
 
 

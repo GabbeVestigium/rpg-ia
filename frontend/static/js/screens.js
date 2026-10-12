@@ -18,7 +18,7 @@ let pointsLeft = 12;
 export async function checkStatus() {
   const dot = $('status-dot');
   const txt = $('status-text');
-  dot.className = 'dot loading';
+  if (!dot.classList.contains('online')) dot.className = 'dot loading';  // rechecagem não pisca o verde
   try {
     const d = await api('/api/status');
     if (d.status === 'online') {
@@ -26,11 +26,11 @@ export async function checkStatus() {
       txt.textContent = `Ollama online · modelo: ${d.active_model}`;
     } else {
       dot.className = 'dot offline';
-      txt.textContent = "Ollama offline. Rode 'ollama serve'";
+      txt.textContent = 'Ollama desligado no PC. Abra o Ollama no PC (ou feche e abra o RPG IA de novo).';
     }
   } catch {
     dot.className = 'dot offline';
-    txt.textContent = 'Servidor não encontrado';
+    txt.textContent = 'Sem conexão com o RPG IA no PC';
   }
 }
 

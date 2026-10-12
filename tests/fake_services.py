@@ -82,6 +82,9 @@ def make_ollama() -> FastAPI:
             chunks = [text[i:i + 4] for i in range(0, len(text), 4)]
             for c in chunks:
                 yield json.dumps({"message": {"content": c}, "done": False}) + "\n"
+            if state.get("error_mid_stream"):   # Ollama que cai no meio da resposta
+                yield json.dumps({"error": "runner crashed"}) + "\n"
+                return
             yield json.dumps({"message": {"content": ""}, "done": True}) + "\n"
 
         return StreamingResponse(gen(), media_type="application/x-ndjson")

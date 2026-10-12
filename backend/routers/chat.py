@@ -14,7 +14,6 @@ Depois do "done", com o chat já liberado, ainda podem chegar:
 """
 
 import json
-import re
 from contextlib import aclosing
 from typing import AsyncIterator, Optional
 
@@ -36,9 +35,9 @@ from backend.ollama_client import (
 )
 from backend.rpg_engine import (
     auto_relationship_delta, calculate_xp_reward, cast_delta, cast_targets, detect_risk_action,
-    get_roll_modifier, roll_d20,
+    get_roll_modifier, roll, roll_d20,
 )
-from backend.rpg_models import GameMode
+from backend.rpg_models import GameMode, RPGState
 from backend.session_manager import (
     add_message, add_swipe, clear_swipes, get_rpg_state, load_session, pop_last_assistant,
     pop_last_exchange, save_session, session_lock, start_swipes, swipe_info, swipes_valid,
@@ -65,52 +64,58 @@ def _require(session_id: str, character_id: str):
 
 
 def _auto_roll(rpg, text: str) -> Optional[dict]:
-    """Rolagem automática para ações de risco no modo completo. Atualiza XP e log."""
+    """Rolagem automática para ações de risco no modo completo. Atualiza XP, HP e log."""
     if rpg.mode != GameMode.FULL or not rpg.player:
         return None
+    player = rpg.player
     attr = detect_risk_action(text)
     if not attr:
+        player.hp_current = min(player.hp_max, player.hp_current + 1)   # recupera o fôlego fora do perigo
         return None
 
-    modifier = get_roll_modifier(rpg.player, attr)
+    modifier = get_roll_modifier(player, attr)
     result = roll_d20(modifier)
+    # Falhar numa ação física machuca: o narrador recebe o dano junto com o resultado.
+    damage = 0
+    if attr in ("STR", "DEX") and result["outcome"] in ("falha", "falha_critica"):
+        damage = roll(6 if result["outcome"] == "falha_critica" else 4)[0]
+        player.hp_current = max(0, player.hp_current - damage)
+    hurt = f" | -{damage} HP, agora {player.hp_current}/{player.hp_max}" if damage else ""
     event = (
         f"[ROLAGEM AUTOMÁTICA: {attr}: d20={result['natural']} + {modifier} = "
-        f"{result['final']} | {result['label']}]"
+        f"{result['final']} | {result['label']}{hurt}]"
     )
 
     xp = calculate_xp_reward(result["outcome"])
-    leveled_up = rpg.player.add_xp(xp) if xp > 0 else False
+    leveled_up = player.add_xp(xp) if xp > 0 else False
     log = f"Rolagem {attr}: {result['natural']}+{modifier}={result['final']} [{result['label']}]"
     if xp:
         log += f" +{xp}XP"
+    if damage:
+        log += f" -{damage}HP"
     if leveled_up:
-        log += f" | LEVEL UP Nível {rpg.player.level}!"
+        log += f" | LEVEL UP Nível {player.level}!"
     rpg.event_log.append(log)
     return {"result": result, "event": event}
 
 
 ROLL_TAG = "\n\n[ROLAGEM AUTOMÁTICA:"
+# O que a mensagem do jogador muda no estado (rolagem, XP, HP, relação), guardado para desfazer.
+_TURN_FIELDS = {"player", "cast_relations", "event_log"}
 
 
-def _revert_roll(session, user_text: str) -> str:
-    """Desfazer: tira a rolagem automática do texto devolvido ao jogador e o XP que ela deu
-    (se não subiu de nível; aí o XP fica, para não bagunçar o nível)."""
-    text, sep, tag = user_text.partition(ROLL_TAG)
-    if not sep:
-        return user_text
-    rpg = get_rpg_state(session)
-    m = re.match(r" (.+?): d20=(\d+) \+ (-?\d+) = (-?\d+) \| (.+)\]", tag)
-    if m and rpg.player:
-        prefix = f"Rolagem {m[1]}: {m[2]}+{m[3]}={m[4]} [{m[5]}]"
-        log = next((l for l in reversed(rpg.event_log) if l.startswith(prefix)), "")
-        xp = re.search(r"\+(\d+)XP", log)
-        if xp and "LEVEL UP" not in log:
-            rpg.player.xp = max(0, rpg.player.xp - int(xp[1]))
-            rpg.event_log.append(f"Rolagem desfeita: -{xp[1]}XP")
-            session.rpg_state = rpg
-            save_session(session)
-    return text
+def _restore_turn(rpg) -> None:
+    """Volta o estado ao de antes da última mensagem do jogador (desfazer, parar ou falha).
+    shortcut: só a última mensagem tem cópia; desfazer duas vezes seguidas não reverte a mais antiga."""
+    if rpg.turn_start:
+        old = RPGState.model_validate(rpg.turn_start)
+        rpg.player, rpg.cast_relations, rpg.event_log = old.player, old.cast_relations, old.event_log
+    rpg.turn_start = None
+
+
+def _strip_roll(user_text: str) -> str:
+    """Desfazer: tira a rolagem automática do texto devolvido ao jogador."""
+    return user_text.partition(ROLL_TAG)[0]
 
 
 def _still_current(session_id: str, text: str):
@@ -122,12 +127,17 @@ def _still_current(session_id: str, text: str):
     return None
 
 
+# Resposta que parou no meio (conexão caiu, celular bloqueou, erro): fica salva, mas marcada.
+INTERRUPTED = "\n\n*(resposta interrompida)*"
+
+
 def _clean_saved(m: Message) -> Message:
-    """Conversas antigas podem ter o lembrete copiado dentro da resposta: ele não volta ao modelo."""
+    """Conversas antigas podem ter o lembrete copiado dentro da resposta, e respostas cortadas têm a
+    marca de interrompida: nada disso volta ao modelo."""
     if m.role != MessageRole.ASSISTANT:
         return m
     content = m.content
-    for marker in NOTE_MARKERS:
+    for marker in NOTE_MARKERS + (INTERRUPTED,):
         content = content.split(marker, 1)[0]
     return Message(role=m.role, content=content.rstrip()) if content != m.content else m
 
@@ -151,11 +161,12 @@ def _streaming(generator: AsyncIterator[str]) -> StreamingResponse:
 
 
 async def _reply(session_id: str, character_id: str, user_text: Optional[str],
-                 regen: bool = False) -> AsyncIterator[str]:
+                 regen: bool = False, undone_inventory: Optional[dict] = None) -> AsyncIterator[str]:
     """
     Gera a resposta do personagem. Com user_text, grava antes a mensagem do jogador
     (e aplica rolagem/relacionamento); sem ele, só responde ao histórico atual
-    (regenerar). A geração roda sob o lock da sessão; os extras depois do "done" (escolhas,
+    (regenerar; `undone_inventory` é a troca de inventário da resposta antiga, que volta se a nova
+    falhar). A geração roda sob o lock da sessão; os extras depois do "done" (escolhas,
     inventário, resumo) rodam com o lock livre e só gravam se a resposta ainda for a última.
     """
     async with session_lock(session_id):
@@ -171,8 +182,9 @@ async def _reply(session_id: str, character_id: str, user_text: Optional[str],
         added_user_message = False
 
         if user_text is not None:
-            roll = _auto_roll(rpg, user_text)
-            stored = f"{user_text}\n\n{roll['event']}" if roll else user_text
+            rpg.turn_start = rpg.model_dump(mode="json", include=_TURN_FIELDS)
+            dice = _auto_roll(rpg, user_text)
+            stored = f"{user_text}\n\n{dice['event']}" if dice else user_text
 
             if rpg.player and rpg.mode != GameMode.NARRATIVE:
                 if character.group and character.cast and rpg.cast_relations:
@@ -195,8 +207,8 @@ async def _reply(session_id: str, character_id: str, user_text: Optional[str],
             add_message(session, MessageRole.USER, stored)
             added_user_message = True
 
-            if roll:
-                yield _sse({"type": "roll", "result": roll["result"], "event": roll["event"]})
+            if dice:
+                yield _sse({"type": "roll", "result": dice["result"], "event": dice["event"]})
 
         world = load_world(character.world_id) if character.world_id else None
         # Fatos do livro do mundo que a conversa acabou de citar (últimas mensagens).
@@ -271,21 +283,30 @@ async def _reply(session_id: str, character_id: str, user_text: Optional[str],
         finally:
             text = full.strip()
             if text and (completed or len(text) >= 20):
-                # Resposta completa, ou parcial que o jogador chegou a ler.
-                add_message(session, MessageRole.ASSISTANT, text)
+                # Resposta completa, ou parcial que o jogador chegou a ler (essa vai marcada como interrompida).
+                saved = text if completed else text + INTERRUPTED
+                add_message(session, MessageRole.ASSISTANT, saved)
                 if regen:
-                    add_swipe(session, text)
+                    add_swipe(session, saved)
                     save_session(session)
             elif regen and session.swipes:
-                # Falhou ao regenerar: devolve a resposta que já existia em vez de deixar a conversa sem ela.
+                # Falhou ao regenerar: devolve a resposta que já existia em vez de deixar a conversa sem
+                # ela, junto com o que ela tinha dado ou tirado do inventário.
+                if undone_inventory and rpg.player:
+                    rpg.last_inventory = apply_changes(rpg.player.inventory, undone_inventory)
+                    session.rpg_state = rpg
                 add_message(session, MessageRole.ASSISTANT, session.swipes[session.swipe_index])
             elif added_user_message:
-                # Nada gerado: desfaz a mensagem do jogador para o histórico não ficar torto.
+                # Nada gerado: desfaz a mensagem do jogador (e a rolagem, o XP e a relação que ela mudou).
                 if session.history and session.history[-1].role == MessageRole.USER:
                     session.history.pop()
+                    _restore_turn(rpg)
+                    session.rpg_state = rpg
                     save_session(session)
 
         if not (completed and text):
+            if text and len(text) >= 20:
+                yield _sse({"type": "replace", "text": text + INTERRUPTED})
             if completed:
                 yield _sse({"type": "error", "message": "O modelo não respondeu nada. Tente regenerar ou "
                                                         "escolha outro modelo nas Configurações."})
@@ -358,11 +379,13 @@ async def regenerate(req: RegenerateRequest):
         session = load_session(req.session_id)
         if not session or len(session.history) < 2:
             raise HTTPException(400, "Não há resposta para regenerar")
+        undone = None
         if session.history[-1].role == MessageRole.ASSISTANT:
+            undone = get_rpg_state(session).last_inventory
             _revert_inventory(session)  # a troca será refeita, então o que ela deu/tirou é desfeito
             start_swipes(session)  # a resposta atual vira a versão 1
             pop_last_assistant(session)
-    return _streaming(_reply(req.session_id, req.character_id, None, regen=True))
+    return _streaming(_reply(req.session_id, req.character_id, None, regen=True, undone_inventory=undone))
 
 
 @router.post("/chat/choices")
@@ -415,7 +438,9 @@ async def undo(req: RegenerateRequest):
             _revert_inventory(session)
         user_text = pop_last_exchange(session) if session else None
         if user_text:
-            user_text = _revert_roll(session, user_text)
+            _restore_turn(get_rpg_state(session))
+            save_session(session)
+            user_text = _strip_roll(user_text)
     if user_text is None:
         raise HTTPException(400, "Nada para desfazer")
     return {"user_text": user_text}
@@ -435,7 +460,8 @@ async def edit_message(req: EditMessageRequest):
         session.history[req.index].content = req.content.strip()
         if edits_current_swipe:
             session.swipes[session.swipe_index] = session.history[req.index].content
-        # O resumo pode ter usado o texto antigo: recalcula a partir dali.
+        # O resumo pode ter usado o texto antigo: refaz do zero, aos poucos (memory._chunk_end cabe no
+        # contexto). Manter o antigo duplicaria os fatos; sem resumo, prompt_window guarda a abertura.
         if req.index < session.summarized_upto:
             session.summary = ""
             session.summarized_upto = 0

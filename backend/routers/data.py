@@ -13,7 +13,9 @@ from fastapi.responses import FileResponse, Response
 from pydantic import ValidationError
 from starlette.background import BackgroundTask
 
-from backend.character_manager import load_character, validate_character
+from backend.character_manager import (
+    USER_CHARACTERS_DIR, USER_WORLDS_DIR, _list_entries, load_character, validate_character,
+)
 from backend.config import (
     CHARACTERS_DIR, PORTRAITS_DIR, PROFILE_FILE, SCENES_DIR, SESSIONS_DIR,
     SETTINGS_FILE, WORLDS_DIR,
@@ -58,9 +60,11 @@ async def export_session(session_id: str, format: str = "md"):
 
 # ─── BACKUP ───────────────────────────────────────────────────────────────────
 
-# pasta no zip -> pasta real
-_DIRS = {"characters": CHARACTERS_DIR, "worlds": WORLDS_DIR, "sessions": SESSIONS_DIR,
+# pasta no zip -> pasta real. Personagens e mundos restaurados vão para a pasta do jogador.
+_DIRS = {"characters": USER_CHARACTERS_DIR, "worlds": USER_WORLDS_DIR, "sessions": SESSIONS_DIR,
          "scenes": SCENES_DIR, "portraits": PORTRAITS_DIR}
+# pasta do jogador -> pasta original (o backup leva a visão juntada das duas)
+_MERGED = {"characters": CHARACTERS_DIR, "worlds": WORLDS_DIR}
 _FILES = {"settings.json": SETTINGS_FILE, "profile.json": PROFILE_FILE}
 MAX_FILE_BYTES = 25 * 1024 * 1024
 MAX_ENTRIES = 20000
@@ -81,7 +85,12 @@ async def download_backup():
     tmp = tempfile.NamedTemporaryFile(suffix=".zip", delete=False)
     tmp.close()
     with zipfile.ZipFile(tmp.name, "w", zipfile.ZIP_DEFLATED) as z:
+        for folder, builtin in _MERGED.items():
+            for data in _list_entries(_DIRS[folder], builtin):  # já sem os marcados como apagados
+                z.writestr(f"{folder}/{data['id']}.json", json.dumps(data, ensure_ascii=False, indent=2))
         for folder, real in _DIRS.items():
+            if folder in _MERGED:
+                continue
             for root, _, files in os.walk(real):
                 for f in files:
                     full = os.path.join(root, f)
@@ -179,7 +188,10 @@ async def restore_backup(file: UploadFile = File(...), overwrite: bool = Form(Fa
         if reason:
             rejected.append({"file": info.filename, "reason": reason})
             continue
-        if os.path.exists(dest) and not overwrite:
+        builtin = _MERGED.get(info.filename.split("/")[0])
+        exists = os.path.exists(dest) or (builtin and os.path.exists(
+            os.path.join(builtin, os.path.basename(dest))))
+        if exists and not overwrite:
             skipped += 1
             continue
         os.makedirs(os.path.dirname(dest), exist_ok=True)

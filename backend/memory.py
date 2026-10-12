@@ -22,7 +22,9 @@ SUMMARY_BATCH = 6
 SUMMARY_TOKENS = 450
 _SYSTEM = (
     "Você mantém a memória de uma história de roleplay. Escreva um resumo factual e "
-    "compacto, em português, em terceira pessoa e no passado. Preserve: nomes, lugares, "
+    "compacto, em português e no passado. As falas marcadas 'Você (jogador):' são do jogador: no resumo, "
+    "chame o jogador sempre de 'você' (ex.: 'você aceitou o trato'), nunca pelo nome nem por 'ele' ou "
+    "'dele'; os outros personagens vão pelo nome. Preserve: nomes, lugares, "
     "promessas, segredos revelados, eventos importantes, itens, o estado do relacionamento "
     "entre os personagens e como a última cena terminou. Não invente nada, não julgue e não "
     "comente. Responda só com o resumo, em até 250 palavras."
@@ -96,7 +98,7 @@ def needs_summary(session: SessionData, keep_from: int) -> bool:
 def _transcript(messages: List[Message], character_name: str) -> str:
     lines = []
     for m in messages:
-        who = character_name if m.role.value == "assistant" else "Jogador"
+        who = character_name if m.role.value == "assistant" else "Você (jogador)"
         lines.append(f"{who}: {m.content}")
     return "\n".join(lines)
 

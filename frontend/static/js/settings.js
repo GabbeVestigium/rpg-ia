@@ -10,7 +10,7 @@ function fields(models, voices) {
   return [
     { section: 'Modelo de texto', key: 'model', label: 'Modelo', type: 'select',
       options: [['', 'Automático (primeiro instalado)'], ...models.map((m) => [m, m])],
-      hint: 'Para roleplay, prefira um modelo de RP/chat de 7B a 12B em Q4/Q5. Instale com: ollama pull <nome>.' },
+      hint: 'Para roleplay, prefira um modelo de RP/chat de 7B a 12B em Q4/Q5. Instale no PC com: ollama pull <nome> (no terminal do PC, não no celular).' },
     { key: 'temperature', label: 'Criatividade (temperatura)', type: 'range', min: 0.2, max: 1.5, step: 0.05 },
     { key: 'top_p', label: 'Top-P', type: 'range', min: 0.5, max: 1, step: 0.01 },
     { key: 'min_p', label: 'Min-P', type: 'range', min: 0, max: 0.3, step: 0.01,

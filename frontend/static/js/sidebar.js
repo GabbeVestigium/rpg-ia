@@ -34,7 +34,7 @@ export function setupSidebar(mode, player, cast = []) {
   full.style.display = 'block';
   narr.style.display = 'none';
   $('stats-section').style.display = mode === 'full' ? 'block' : 'none';
-  $('quests-section').style.display = mode === 'full' ? 'block' : 'none';
+  $('quests-section').style.display = 'none';   // só aparece quando houver missão (ver updateSidebar)
   updateCast(cast);
   if (player) updateSidebar(player, mode);
 }
@@ -94,6 +94,8 @@ export function updateSidebar(player, mode) {
     }
 
     const active = (player.quests || []).filter((q) => q.status === 'active');
+    // Nada na conversa cria missão sozinho: a seção fica escondida até existir uma.
+    $('quests-section').style.display = active.length ? 'block' : 'none';
     $('quests-list').innerHTML = active.length
       ? active.map((q) => `<div class="quest-item"><div class="quest-title">${escapeHtml(q.title)}</div>
           <div class="quest-desc">${escapeHtml((q.description || '').slice(0, 60))}...</div></div>`).join('')

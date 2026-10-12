@@ -90,7 +90,9 @@ O Piper roda na CPU, sem tirar VRAM do texto e das imagens.
 
 ## Personagens
 
-Use **➕ Novo personagem** na tela inicial (ou crie um `.json` em `data/characters/`).
+Use **➕ Novo personagem** na tela inicial (ou crie um `.json` em `data/user/characters/`).
+O que você cria ou edita fica em `data/user/` (fora do git) e vale por cima dos personagens e mundos
+que vêm com o projeto, então um `git pull` não apaga nem trava as suas edições.
 Dicas para um personagem que soa bem:
 - **Falas de exemplo** ensinam o estilo melhor que descrições.
 - **Tags de aparência** (inglês, ex: `1girl, long black hair, violet eyes`) mantêm o rosto igual em todas as imagens.
@@ -101,7 +103,7 @@ Dicas para um personagem que soa bem:
 ```
 backend/    FastAPI (routers, memória, cliente Ollama/SD/Piper)
 frontend/   HTML + módulos ES, sem build
-data/       characters/, worlds/, sessions/ (conversas), scenes/ (imagens), settings.json
+data/       characters/, worlds/ (os que vêm com o projeto), user/ (os seus), sessions/ (conversas), scenes/ (imagens), settings.json
 tests/      pytest + teste de ponta a ponta no navegador
 ```
 

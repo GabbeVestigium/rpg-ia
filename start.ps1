@@ -31,10 +31,23 @@ if (Responde $AppUrl) {
 # ── 1. Cria venv se não existir (só aqui precisa do Python do sistema) ──
 $VenvDir = Join-Path $ProjectDir "venv"
 $VenvPython = Join-Path $VenvDir "Scripts\python.exe"
+# Instalação antiga: o venv ficava em $HOME\rpg-venv. Se ele existe e o do projeto não, usa o antigo.
+$OldVenv = Join-Path $HOME "rpg-venv"
+if (-not (Test-Path $VenvPython) -and (Test-Path (Join-Path $OldVenv "Scripts\python.exe"))) {
+    $VenvDir = $OldVenv
+    $VenvPython = Join-Path $VenvDir "Scripts\python.exe"
+}
 if (-not (Test-Path $VenvPython)) {
-    # Prefere o launcher "py"; ignora o atalho da Microsoft Store (WindowsApps), que não é um Python de verdade
+    # Prefere o launcher "py" com uma versão que tem pacotes prontos (3.14+ ainda compila o pydantic do zero);
+    # ignora o atalho da Microsoft Store (WindowsApps), que não é um Python de verdade
     $PythonExe = (Get-Command py -ErrorAction SilentlyContinue).Source
     $PyArgs = @("-3")
+    if ($PythonExe) {
+        foreach ($v in "3.12", "3.11", "3.13", "3.10") {
+            & $PythonExe "-$v" -c "pass" 2>$null
+            if ($LASTEXITCODE -eq 0) { $PyArgs = @("-$v"); break }
+        }
+    }
     if (-not $PythonExe) {
         $PythonExe = Get-Command python -All -ErrorAction SilentlyContinue |
             Where-Object { $_.Source -notlike "*\WindowsApps\*" } |
@@ -128,7 +141,21 @@ Start-Job -ArgumentList $AppUrl -ScriptBlock {
     }
 } | Out-Null
 
+# Não deixa o Windows dormir enquanto o servidor roda (a tela ainda pode apagar). Vale só enquanto
+# este terminal estiver aberto: ao fechar, o Windows volta a dormir normalmente.
+$Acordado = $false
+try {
+    Add-Type -Namespace RpgIa -Name Energia -MemberDefinition '[DllImport("kernel32.dll")] public static extern uint SetThreadExecutionState(int esFlags);'
+    $Acordado = [RpgIa.Energia]::SetThreadExecutionState(0x80000001) -ne 0   # ES_CONTINUOUS | ES_SYSTEM_REQUIRED
+    if ($Acordado) { Write-Host "[OK] O PC não vai dormir enquanto o RPG IA estiver aberto" -ForegroundColor Green }
+} catch { }
+
 # Roda o servidor (bloqueante: mantém o terminal aberto)
 Set-Location $ProjectDir
-& $VenvPython -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
-if ($LASTEXITCODE -ne 0) { Falha "O servidor parou com erro (código $LASTEXITCODE). Veja a mensagem acima." }
+try {
+    & $VenvPython -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
+    $Codigo = $LASTEXITCODE
+} finally {
+    if ($Acordado) { [RpgIa.Energia]::SetThreadExecutionState(0x80000000) | Out-Null }   # libera o sono
+}
+if ($Codigo -ne 0) { Falha "O servidor parou com erro (código $Codigo). Veja a mensagem acima." }
