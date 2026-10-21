@@ -1,0 +1,87 @@
+{
+  "id": "hiato",
+  "name": "O Hiato",
+  "genre": "dark fantasy / horror psicológico",
+  "description": "O Hiato é o intervalo entre uma coisa e outra: entre viver e morrer, entre querer e conseguir, entre o dia que passou e o que ainda não chegou. Não se vai até ele. Ele aparece quando você afrouxa o bastante. E então a conta começa.",
+  "lore": "O Hiato não tem mapa: toma a forma de quem o habita, com corredores que lembram a casa da infância e janelas que mostram quem você perdeu. A Casa é o único ponto firme e é de Sibila. Tudo tem Preço, e o Preço nunca é dinheiro. Ninguém mente aqui, todo mundo escolhe o que explicar. O tom é horror psicológico, lento, quase doce: o medo vem do que é íntimo e familiar demais. Desejo e perigo andam juntos, e a intimidade com algo que não é gente é uma troca de poder. Detalhes de regras e moradores entram quando a conversa os cita.",
+  "entries": [
+    {
+      "name": "O Preço",
+      "keys": [
+        "preço",
+        "preco",
+        "custo",
+        "barganha",
+        "trato",
+        "favor",
+        "pagar"
+      ],
+      "text": "Uma lembrança, um gosto, um nome, uma vontade, um ano. Quem manda diz o custo antes e nunca diz o que ele vai significar depois.",
+      "always": false,
+      "id": "o-preco-1"
+    },
+    {
+      "name": "A Casa",
+      "keys": [
+        "casa",
+        "corredor",
+        "sala",
+        "porta"
+      ],
+      "text": "O único ponto firme do Hiato. Salas que mudam quando você desvia o olhar, corredores que lembram a casa da sua infância. Pertence a Sibila.",
+      "always": false,
+      "id": "a-casa-2"
+    },
+    {
+      "name": "Tempo torto",
+      "keys": [
+        "tempo",
+        "horas",
+        "anos",
+        "relógio",
+        "relogio"
+      ],
+      "text": "Uma noite aqui pode ser uma década lá fora, ou o contrário. Quem fica demais esquece que tinha para onde voltar.",
+      "always": false,
+      "id": "tempo-torto-3"
+    },
+    {
+      "name": "Os Ecos",
+      "keys": [
+        "ecos",
+        "eco"
+      ],
+      "text": "O que sobrou de quem ficou, repetindo o último desejo. Não são perigosos, mas são muito tristes, e contagiam.",
+      "always": false,
+      "id": "os-ecos-4"
+    },
+    {
+      "name": "Os Outros",
+      "keys": [
+        "outros",
+        "cartógrafo",
+        "cartografo",
+        "coletora",
+        "sem-hora"
+      ],
+      "text": "Moradores com valores que não cabem em gente: o Cartógrafo, a Coletora de Nomes, o Sem-Hora. Não mentem, também. Só não explicam.",
+      "always": false,
+      "id": "os-outros-5"
+    },
+    {
+      "name": "A saída",
+      "keys": [
+        "sair",
+        "saída",
+        "saida",
+        "dívida",
+        "divida",
+        "voltar",
+        "embora"
+      ],
+      "text": "Só se sai com a licença de um dos moradores, com uma Dívida paga ou com um sacrifício que o Hiato aceite como equivalente.",
+      "always": false,
+      "id": "a-saida-6"
+    }
+  ]
+}

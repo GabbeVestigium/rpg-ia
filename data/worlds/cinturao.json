@@ -1,0 +1,99 @@
+{
+  "id": "cinturao",
+  "name": "Cinturão Vermelho",
+  "genre": "sci-fi / space opera",
+  "description": "O Cinturão Vermelho é onde a Terra manda o que não quer ver: minério, dívida e gente com pressa. Entre os asteroides rodam estações, naves de carga e acordos que nenhuma lei alcança. Ninguém é dono de nada além da própria nave, e todo mundo deve a alguém pela nave que tem.",
+  "lore": "No Cinturão vale a Lei do Resgate: qualquer nave socorre outra em perigo, sem perguntar o que ela carrega. O resto vale pouco. O Consórcio Belmonte compra a carga, empresta o combustível e fica com a alma das tripulações pequenas. Viagens levam semanas, a gravidade é de rotação e o ar é caro, e por isso quem divide uma cabine acaba dividindo muito mais. O tom é space opera suja e calorosa: cafés ruins, apelidos, música tocando baixo no corredor, perigo sempre a um parafuso de distância. Intimidade entre adultos acontece rápida, honesta e sem cerimônia, porque o espaço é pequeno e o tempo, também. Detalhes de lugares, facções e regras entram quando a conversa os cita.",
+  "entries": [
+    {
+      "name": "Consórcio Belmonte",
+      "keys": [
+        "belmonte",
+        "consórcio",
+        "consorcio",
+        "dívida",
+        "divida",
+        "combustível",
+        "combustivel"
+      ],
+      "text": "Compra carga, empresta combustível e cobra juro em rota. Tem fiscal em toda estação grande e um sorriso para quem deve pouco.",
+      "always": false,
+      "id": "consorcio-belmonte-1"
+    },
+    {
+      "name": "Estação Ferrugem",
+      "keys": [
+        "ferrugem",
+        "estação",
+        "estacao",
+        "porto",
+        "doca"
+      ],
+      "text": "O maior porto do Cinturão: três anéis, um mercado cinza e um bar onde ninguém pergunta o nome. Há cobrança de atracação até para quem só vai pedir ajuda.",
+      "always": false,
+      "id": "estacao-ferrugem-2"
+    },
+    {
+      "name": "A Bicuda",
+      "keys": [
+        "bicuda",
+        "nave",
+        "cargueiro"
+      ],
+      "text": "Cargueiro de médio porte, treze anos, sete reparos grandes e um motor que só pega depois de um xingamento. Tem cheiro de café e de óleo e dá azar dizer isso em voz alta.",
+      "always": false,
+      "id": "a-bicuda-3"
+    },
+    {
+      "name": "A Lei do Resgate",
+      "keys": [
+        "resgate",
+        "socorro",
+        "naufrágio",
+        "naufragio",
+        "sinal"
+      ],
+      "text": "Sinal de socorro obriga qualquer nave a parar e ajudar. Ninguém pergunta o que ela leva. Quase todo contrabandista confia só nisso.",
+      "always": false,
+      "id": "a-lei-do-resgate-4"
+    },
+    {
+      "name": "O Lacre",
+      "keys": [
+        "lacre",
+        "contrabando",
+        "carga lacrada",
+        "selo",
+        "fiscal"
+      ],
+      "text": "Selo do Consórcio que declara uma carga como conferida. Quebrar um lacre é crime, e a carga que vai sem lacre quase sempre vale mais que o frete.",
+      "always": false,
+      "id": "o-lacre-5"
+    },
+    {
+      "name": "Gravidade de rotação",
+      "keys": [
+        "gravidade",
+        "rotação",
+        "rotacao",
+        "enjoo",
+        "corredor"
+      ],
+      "text": "A nave gira para fingir peso. Quem chega de fora sente o corredor inclinando por dias. Quem fica não consegue mais dormir em chão parado.",
+      "always": false,
+      "id": "gravidade-de-rotacao-6"
+    },
+    {
+      "name": "A rota torta",
+      "keys": [
+        "rota",
+        "trajeto",
+        "atalho",
+        "torta"
+      ],
+      "text": "Atalho entre estações que o Consórcio não mapeou, cheio de rocha solta. Salva três semanas e custa nervos, e às vezes o casco.",
+      "always": false,
+      "id": "a-rota-torta-7"
+    }
+  ]
+}

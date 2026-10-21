@@ -1,0 +1,110 @@
+{
+  "id": "pedralva",
+  "name": "Pedralva",
+  "genre": "vampiros / noir urbano",
+  "description": "Pedralva é uma cidade de porto e ladeira onde a noite dura mais do que devia. Há mais de um século ela é dividida em casas: famílias de vampiros que se revezam no poder, e humanos que trabalham para elas sem nunca dizer que sabem. A regra é simples e frágil: ninguém morde em público, ninguém cobra o que não emprestou, e ninguém entra armado no Salão Dourado.",
+  "lore": "Os vampiros de Pedralva vivem de convites e de dívidas, não de sustos. Um vampiro só entra onde é chamado, e todo favor vira um registro no Rol, o livro que cada casa guarda dos seus devedores. A noite é de quem tem casa; o dia é dos humanos e dos poucos que aprenderam a dormir. O tom é noir romântico, lento e elegante: música ao vivo, cigarro apagado no cinzeiro, olhares que duram demais. Desejo aqui anda junto com dívida: quem quer, deve; quem deve, é querido. Detalhes de casas, regras e lugares entram na conversa quando surgem.",
+  "entries": [
+    {
+      "name": "Casa Monteclaro",
+      "keys": [
+        "monteclaro",
+        "estela",
+        "casa"
+      ],
+      "text": "A casa mais antiga da cidade e a mais discreta. Não manda, empresta. Quase todo mundo em Pedralva deve alguma coisa a ela, e ela nunca cobra em voz alta.",
+      "always": false,
+      "id": "casa-monteclaro-1"
+    },
+    {
+      "name": "Casa Rangel",
+      "keys": [
+        "rangel",
+        "rivais",
+        "rival"
+      ],
+      "text": "A casa nova, rica e barulhenta. Acha que poder é aparecer e que a Monteclaro está velha demais para segurar a cidade.",
+      "always": false,
+      "id": "casa-rangel-2"
+    },
+    {
+      "name": "O Salão Dourado",
+      "keys": [
+        "salão",
+        "salao",
+        "dourado",
+        "bar",
+        "piano"
+      ],
+      "text": "Bar, restaurante e pista de dança, terreno neutro desde antes da guerra das casas. Piano ao fundo, cortinas de veludo, nenhuma arma permitida. Todo mundo finge que isso basta.",
+      "always": false,
+      "id": "o-salao-dourado-3"
+    },
+    {
+      "name": "O Convite",
+      "keys": [
+        "convite",
+        "convidar",
+        "entrar",
+        "chamar"
+      ],
+      "text": "Um vampiro só cruza a porta de quem o chamou. Em Pedralva, convidar é a coisa mais íntima e mais perigosa que se pode fazer, e ninguém faz sem pensar duas vezes.",
+      "always": false,
+      "id": "o-convite-4"
+    },
+    {
+      "name": "O Rol",
+      "keys": [
+        "rol",
+        "dívida",
+        "divida",
+        "deve",
+        "devo",
+        "cobrança",
+        "cobranca"
+      ],
+      "text": "O livro onde cada casa anota o que emprestou e a quem. A dívida de sangue é a mais séria: não se paga em dinheiro, se paga em tempo, em lealdade ou em presença.",
+      "always": false,
+      "id": "o-rol-5"
+    },
+    {
+      "name": "A sede",
+      "keys": [
+        "sede",
+        "fome",
+        "morder",
+        "mordida",
+        "sangue"
+      ],
+      "text": "A fome vem em ondas, e os mais velhos a escondem melhor. Morder alguém em público é crime entre as casas; morder com consentimento, em particular, é outra conversa, e uma das mais íntimas.",
+      "always": false,
+      "id": "a-sede-6"
+    },
+    {
+      "name": "O Aviso",
+      "keys": [
+        "aviso",
+        "manhã",
+        "manha",
+        "sol",
+        "amanhecer",
+        "luz"
+      ],
+      "text": "Como os vampiros chamam o amanhecer. Quem é pego longe de casa sente o Aviso na pele muito antes de o sol aparecer. O Salão tem um quarto sem janelas só para isso.",
+      "always": false,
+      "id": "o-aviso-7"
+    },
+    {
+      "name": "O Cais e a Ladeira",
+      "keys": [
+        "cais",
+        "ladeira",
+        "porto",
+        "bonde"
+      ],
+      "text": "O porto de dia, a ladeira à noite. É por ali que a cidade mistura gente de todas as casas e todos os tipos de pressa.",
+      "always": false,
+      "id": "o-cais-e-a-ladeira-8"
+    }
+  ]
+}

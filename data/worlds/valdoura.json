@@ -1,0 +1,110 @@
+{
+  "id": "valdoura",
+  "name": "Valdoura",
+  "genre": "corte medieval / intriga",
+  "description": "Valdoura é um reino rico em sal, vinho e inimigos, governado por um rei jovem demais e por uma corte velha demais. Quem fala alto morre cedo; quem escuta, sobrevive. Os verdadeiros assuntos do reino se resolvem em corredores, em jantares e nas anotações de quem sabe escrever com letra miúda.",
+  "lore": "O poder em Valdoura não está na coroa, e sim em quem sabe o que a coroa fez, deixou de fazer e vai fazer amanhã. A Casa Nogueira, a Casa Pires e a Regência disputam cada voto, cada casamento e cada garrafa. Veneno é etiqueta: ninguém serve vinho a ninguém sem que um provador tenha bebido antes. O tom é intriga elegante: conversas em duplo sentido, bilhetes sem assinatura, favores trocados como cartas de baralho. Desejo e poder andam colados: quem seduz também negocia, e quem cede também ganha. A intimidade acontece quando os dois lados escolhem, e quase sempre custa uma informação. Detalhes de casas, lugares e costumes entram na conversa quando surgem.",
+  "entries": [
+    {
+      "name": "O rei Henrique",
+      "keys": [
+        "rei",
+        "henrique",
+        "coroa",
+        "majestade"
+      ],
+      "text": "Jovem, amado e mal informado. Manda como quem aprendeu a mandar em livro. A Regência fala por ele quase sempre, e ele já percebeu.",
+      "always": false,
+      "id": "o-rei-henrique-1"
+    },
+    {
+      "name": "A Regência",
+      "keys": [
+        "regência",
+        "regencia",
+        "regente",
+        "conselho"
+      ],
+      "text": "O conselho que governa em nome do rei até que ele complete a idade. Dividido, lento e muito dependente de quem o informa.",
+      "always": false,
+      "id": "a-regencia-2"
+    },
+    {
+      "name": "Casa Nogueira",
+      "keys": [
+        "nogueira",
+        "duque",
+        "herdeiro"
+      ],
+      "text": "A maior casa do reino em terras e em memória. Orgulhosa, controla o sal e acha que a coroa está de passagem.",
+      "always": false,
+      "id": "casa-nogueira-3"
+    },
+    {
+      "name": "Casa Pires",
+      "keys": [
+        "pires",
+        "condessa",
+        "vinho",
+        "vinhedo"
+      ],
+      "text": "Rica pelo vinho e pobre de escrúpulo. Vende lealdade em garrafa e a retoma em favor.",
+      "always": false,
+      "id": "casa-pires-4"
+    },
+    {
+      "name": "Os Pássaros",
+      "keys": [
+        "pássaros",
+        "passaros",
+        "espiões",
+        "espioes",
+        "rede",
+        "informante"
+      ],
+      "text": "A rede de informantes de Leonor: criados, escribas, cozinheiras, um ou dois padres. Chamam-se assim porque cantam sem que se saiba de onde.",
+      "always": false,
+      "id": "os-passaros-5"
+    },
+    {
+      "name": "A Chave",
+      "keys": [
+        "chave",
+        "gabinete",
+        "arquivo",
+        "cofre"
+      ],
+      "text": "O gabinete de Leonor, no último andar da torre norte. Só ela tem a chave do cofre. Ali dormem as cartas que ninguém queria escritas.",
+      "always": false,
+      "id": "a-chave-6"
+    },
+    {
+      "name": "A prova",
+      "keys": [
+        "prova",
+        "provador",
+        "veneno",
+        "antídoto",
+        "antidoto",
+        "taça",
+        "taca"
+      ],
+      "text": "Costume de corte: todo vinho e todo prato são provados antes do rei e dos grandes. Provadores morrem pouco e envelhecem mal. Há quem prefira confiar em uma pessoa que em três.",
+      "always": false,
+      "id": "a-prova-7"
+    },
+    {
+      "name": "O Baile do Sal",
+      "keys": [
+        "baile",
+        "dança",
+        "danca",
+        "festa",
+        "convite"
+      ],
+      "text": "A maior festa do ano. Todas as casas vêm, ninguém dança por prazer, e metade dos tratos do reino se fecha entre uma valsa e a seguinte.",
+      "always": false,
+      "id": "o-baile-do-sal-8"
+    }
+  ]
+}
