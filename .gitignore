@@ -46,3 +46,6 @@ data/scenes/
 data/settings.json
 data/profile.json
 .pytest_cache/
+
+# Pacotes baixados por testes
+*.whl
