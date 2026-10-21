@@ -194,6 +194,28 @@ Estilo dos textos: nomes que soam como lugar e pessoa, não como tradução lite
 
 ---
 
+## Adiado de propósito (o dono quer no futuro)
+
+Decisão de 21/10/2026: por enquanto o projeto continua **pessoal e local**, sem profissionalizar. Estes três itens foram
+tirados da lista agora, **mas o dono quer fazê-los depois e pediu para ser lembrado** quando a IA achar que já dá:
+
+1. **App no celular.** Passo intermediário barato: abrir o servidor para a rede local (hoje escuta só em 127.0.0.1) com aviso de
+   segurança, e transformar a interface em PWA. App nativo só depois.
+2. **Publicar** (site aberto a outras pessoas). Exige contas e login, hospedagem com GPU ou API de modelo, moderação,
+   **verificação de idade obrigatória (18+)**, termos de uso e um plano de custos.
+3. **Monetizar.** Depende do item 2. Processadores de pagamento comuns costumam recusar conteúdo adulto, então é preciso
+   pesquisar alternativas e a parte legal antes de escrever código.
+
+**Quando a IA deve avisar o dono que já dá para começar** (todas as condições):
+- o dono testou no PC dele e os bugs confirmados da análise de 21/10 foram corrigidos;
+- o roadmap da análise está feito ou o dono disse que está satisfeito com o jogo local;
+- o dono perguntar por compartilhar com outras pessoas, ou a IA perceber que não há mais ganho grande no uso local.
+
+Ao avisar, a IA deve primeiro propor um plano (custos, riscos, ordem) e só então codar. Ver também a seção "Regras do Projeto":
+a regra 18+ e a de não escrever conteúdo explícito continuam valendo, e valem com mais força num produto público.
+
+---
+
 ## Problemas Conhecidos / Avisos
 
 - `venv/` não está no repositório, precisa recriar com `pip install -r requirements.txt`
